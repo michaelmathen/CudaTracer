@@ -1,5 +1,3 @@
-
-
 C_FLAGS = -std=c99 
 CXX_FLAGS = -g -std=c++11
 NVCC_FLAGS =  -g 
@@ -14,6 +12,8 @@ INCLUDE_DIRS = -I/usr/local/cuda/include
 CXX = g++
 CC = gcc
 NVCC = nvcc
+
+OUTPUT_DIR=./bin/
 
 CUDA_FILES = Renderer.cu \
              DistanceRenderer.cu \

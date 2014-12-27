@@ -1,3 +1,5 @@
 *.o
 *~
 *.ppm
+#This is so that we ignore the executable
+rayTracer
