@@ -1,0 +1,20 @@
+#include "cuda_defs.h"
+
+
+#ifndef MM_MATERIAL
+#define MM_MATERIAL
+
+namespace mm_ray {
+  class Material {
+  public:
+    
+    __host__ __device__ Material(){}
+    
+    __host__ __device__ virtual bool isLight() {
+      return false;
+    }
+
+    static const Virtual_Type_Val type_id = MATERIAL;
+  };
+}
+#endif

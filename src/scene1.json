@@ -1,0 +1,32 @@
+{
+    "camera":{
+	"cam_loc":[-1.0, 0.0, 0.0],
+	"cam_dir":[1.0, 0.0, 0.0],
+	"cam_up":[0.0, 0.0, 1.0]
+    },
+    "viewport_size":[2.0, 1.0],
+    "output":[1600, 800],
+    "geometry":[
+	{
+	    "type":"sphere",
+	    "center":[4.0, 0.0, 0.0],
+	    "radius":1.0,
+	    "color":"FF0000",
+	    "material":"shiny"
+	},
+	{
+	    "type":"sphere",
+	    "center":[4.0, 2.0, 0.0],
+	    "radius":0.5,
+	    "color":"808080",
+	    "material":"matte_light"
+	},
+	{
+	    "type":"sphere",
+	    "center":[4.0, 3.0, 0.0],
+	    "radius":0.25,
+	    "color":"006699",
+	    "material":"matte"
+	}
+    ]
+}
