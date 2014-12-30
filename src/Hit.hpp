@@ -1,8 +1,7 @@
-#include "VectorMath.hpp"
 #include "SceneObjects.hpp"
 #include "SceneAllocator.hpp"
 #include "Material.hpp"
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 
 #ifndef MM_HIT
 #define MM_HIT

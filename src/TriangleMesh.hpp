@@ -1,4 +1,4 @@
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "SceneAllocator.hpp"
 #include "Geometry.hpp"
 

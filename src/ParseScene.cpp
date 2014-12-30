@@ -1,3 +1,4 @@
+
 #include <cstdlib>
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
@@ -7,6 +8,7 @@
 #include <vector>
 #include <iostream>
 #include <memory>
+#include "ray_defs.hpp"
 #include "SceneAllocator.hpp"
 #include "Renderer.hpp"
 #include "PhongRenderer.hpp"
@@ -14,7 +16,6 @@
 #include "PhongMaterial.hpp"
 #include "SceneObjects.hpp"
 #include "SceneContainer.hpp"
-#include "VectorMath.hpp"
 #include "ParsingException.hpp"
 #include "AmbientMaterial.hpp"
 #include "ParseScene.hpp"

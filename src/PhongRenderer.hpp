@@ -1,13 +1,11 @@
 #include <cstdio>
 #include <vector>
 
-
 #include "SceneContainer.hpp"
 #include "SceneObjects.hpp"
-#include "VectorMath.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "Renderer.hpp"
 
 #ifndef  MM_PHONG_RENDERER

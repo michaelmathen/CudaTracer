@@ -1,17 +1,17 @@
 C_FLAGS = -std=c99 
 CXX_FLAGS = -g -std=c++11
 NVCC_FLAGS =  -g 
-LD_LIB_DIRS = -L/usr/local/cuda/lib64
+LD_LIB_DIRS = -L/usr/local/cuda/lib
 LD_FLAGS = -lcuda -lcudart -lcurand 
 LD_STATIC = 
-INCLUDE_DIRS = -I/usr/local/cuda/include 
+INCLUDE_DIRS = -I/usr/local/cuda/include -I/Users/mmath/Dropbox/Fun/Vecky/src/
 
-#CXX = /usr/local/bin/g++-4.8
-#CC = /usr/local/bin/gcc-4.8
-#NVCC = /usr/local/cuda/bin/nvcc
-CXX = g++
-CC = gcc
-NVCC = nvcc
+CXX = /usr/local/bin/g++-4.8
+CC = /usr/local/bin/gcc-4.8
+NVCC = /usr/local/cuda/bin/nvcc
+#CXX = g++
+#CC = gcc
+#NVCC = nvcc
 
 OUTPUT_DIR=./bin/
 
@@ -29,7 +29,8 @@ CXX_FILES= main.cpp \
 
 CXX_OBJS = $(CXX_FILES:%.cpp=%.o)
 
-C_FILES= #bmpWrapper.c
+C_FILES=
+
 
 C_OBJS = $(C_FILES:%.c=%.o)
 

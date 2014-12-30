@@ -1,5 +1,5 @@
-#include "cuda_defs.h"
-#include "VectorMath.hpp"
+#include "ray_defs.hpp"
+
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "Geometry.hpp"

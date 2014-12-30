@@ -11,7 +11,7 @@
 #endif
 
 #define SERIALIZE void 
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 
 #ifndef MM_SCENE_ALLOCATOR
 #define MM_SCENE_ALLOCATOR

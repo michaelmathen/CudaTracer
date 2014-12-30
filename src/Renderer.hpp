@@ -1,5 +1,5 @@
 #include <vector>
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "SceneObjects.hpp"
 #include "SceneContainer.hpp"
 

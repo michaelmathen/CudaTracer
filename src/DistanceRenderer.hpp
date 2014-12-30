@@ -3,10 +3,9 @@
 
 #include "SceneContainer.hpp"
 #include "SceneObjects.hpp"
-#include "VectorMath.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "Renderer.hpp"
 
 namespace mm_ray {

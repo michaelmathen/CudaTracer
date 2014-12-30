@@ -1,5 +1,5 @@
-#include "cuda_defs.h"
-#include "VectorMath.hpp"
+#include "ray_defs.hpp"
+
 
 #ifndef MM_RAY_BASE
 #define MM_RAY_BASE

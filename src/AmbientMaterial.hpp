@@ -1,6 +1,4 @@
-#include "cuda_defs.h"
-
-#include "VectorMath.hpp"
+#include "ray_defs.hpp"
 #include "Material.hpp"
 
 #ifndef MM_AMBIENT_MATERIAL

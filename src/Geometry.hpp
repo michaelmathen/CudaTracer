@@ -1,8 +1,7 @@
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "Material.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
-#include "VectorMath.hpp"
 
 #include "SceneAllocator.hpp"
 

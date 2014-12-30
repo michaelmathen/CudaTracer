@@ -1,4 +1,4 @@
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 
 
 #ifndef MM_MATERIAL

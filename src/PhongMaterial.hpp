@@ -1,4 +1,3 @@
-#include "VectorMath.hpp"
 #include "Material.hpp"
 
 #ifndef MM_PHONG

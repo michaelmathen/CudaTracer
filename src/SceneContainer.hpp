@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <iostream>
-#include "cuda_defs.h"
-#include "VectorMath.hpp"
+
+#include "ray_defs.hpp"
 #include "SceneObjects.hpp"
 #include "Geometry.hpp"
 #include "Sphere.hpp"

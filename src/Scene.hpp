@@ -1,4 +1,3 @@
-#include "VectorMath.hpp"
 #include <cstring>
 #include <iostream>
 

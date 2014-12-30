@@ -4,60 +4,10 @@
 
 #include "SceneContainer.hpp"
 #include "SceneObjects.hpp"
-#include "VectorMath.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
-#include "cuda_defs.h"
-
 #include "PhongRenderer.hpp"
-
-#define curand_check(err) { check_curand(err, __FILE__, __LINE__); }
-
-void check_curand(curandStatus_t err, const char* file, int line){
-  switch(err) {
-  case CURAND_STATUS_SUCCESS:
-    //All good
-    return ;
-  case CURAND_STATUS_VERSION_MISMATCH:
-    fprintf(stderr, "Header file and linked library version do not match\n");
-    break;
-  case CURAND_STATUS_NOT_INITIALIZED:
-    fprintf(stderr, "Generator not initialized\n");
-    break;
-  case CURAND_STATUS_ALLOCATION_FAILED:
-    fprintf(stderr, "Memory allocation failed\n");
-    break;
-  case CURAND_STATUS_TYPE_ERROR:
-    fprintf(stderr, "Generator is wrong type\n");
-    break;
-  case CURAND_STATUS_OUT_OF_RANGE:
-    fprintf(stderr, "Argument out of range\n");
-    break;
-  case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
-    fprintf(stderr, "Length requested is not a multple of dimension\n");
-    break;
-  case CURAND_STATUS_LAUNCH_FAILURE:
-    fprintf(stderr, "Kernel launch failure\n");
-    break;
-  case CURAND_STATUS_PREEXISTING_FAILURE:
-    fprintf(stderr, "Preexisting failure on library entry\n");
-    break;
-  case CURAND_STATUS_INITIALIZATION_FAILED:
-    fprintf(stderr, "Initialization of CUDA failed\n");
-    break;
-  case CURAND_STATUS_ARCH_MISMATCH:
-    fprintf(stderr, "Architecture mismatch, GPU does not support requested feature\n");
-    break;
-  case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
-    fprintf(stderr, "The GPU does not support double precision\n");
-    break;
-  case CURAND_STATUS_INTERNAL_ERROR:
-    fprintf(stderr, "Internal library error\n");
-    break;
-  }
-  fprintf(stderr, "%s, %d\n", file, line);
-}
-
+#include "ray_defs.hpp"
 
 using namespace std;
 
@@ -95,14 +45,11 @@ void render_pixel_phong(Scene scene,
   
   Real_t norm_i = ((px_f / (Real_t)scene.output[0]) - .5) * scene.viewport[0];
   Real_t norm_j = ((py_f / (Real_t)scene.output[1]) - .5) * scene.viewport[1];
-  //printf("Got Here %f\n", (1.f * scene.cam_right)[0]);
-  //printf("norm_i, norm_j %f %f\n", scene.viewport[0], norm_j);
-  Vec3 direc;
-  direc[0]= norm_i * scene.cam_right[0] + norm_j * scene.cam_up[0] + scene.cam_dir[0];
-  direc[1]= norm_i * scene.cam_right[1] + norm_j * scene.cam_up[1] + scene.cam_dir[1];
-  direc[2]= norm_i * scene.cam_right[2] + norm_j * scene.cam_up[2] + scene.cam_dir[2];
+
+  Vec3 direc= norm_i * scene.cam_right + norm_j * scene.cam_up + scene.cam_dir;
+
   //Normalize ray
-  direc = direc * (1 / mag(direc));
+  direc = direc / mag(direc);
 
   Ray ray(direc, scene.cam_loc);
 
@@ -128,7 +75,7 @@ void render_pixel_phong(Scene scene,
 
       Real_t length_to_light = mag(new_ray);
       
-      new_ray = new_ray * (1 / length_to_light);
+      new_ray = new_ray / length_to_light;
       
       //Shoot ray towards the light source and see if we hit before the light
       Hit shadow_prop;

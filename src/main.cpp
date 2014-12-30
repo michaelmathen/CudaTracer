@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
-#include "cuda_defs.h"
+#include "ray_defs.hpp"
 #include "ParseScene.hpp"
 #include "SceneContainer.hpp"
 #include "SceneObjects.hpp"
