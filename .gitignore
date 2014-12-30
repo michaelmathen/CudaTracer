@@ -1,5 +1,6 @@
 *.o
 *~
 *.ppm
+.DS_Store
 #This is so that we ignore the executable
 rayTracer
