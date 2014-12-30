@@ -18,7 +18,9 @@
 #include "SceneContainer.hpp"
 #include "ParsingException.hpp"
 #include "AmbientMaterial.hpp"
+#include "TriangleMesh.hpp"
 #include "ParseScene.hpp"
+
 
 using namespace mm_ray;
 using namespace std;

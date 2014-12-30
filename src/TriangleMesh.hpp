@@ -1,40 +1,50 @@
-#include "ray_defs.hpp"
+#include <vector>
+#include <string>
 #include "SceneAllocator.hpp"
-#include "Geometry.hpp"
+#include "Material.hpp"
+#include "ray_defs.hpp"
 
+#ifndef MM_TRIANGLE_MESH
+#define MM_TRIANGLE_MESH
 namespace mm_ray {
-  class TriangleMesh : public Geometry {
+
+  class Triangle;
+  
+  class TriangleMesh {
+    
+  public:
 
     s_ptr<Vec3> triangle_vertices;
     s_ptr<int[3]> vertex_indices;
-    int number_of_triangles;
+    unsigned int number_of_triangles;
+    s_ptr<Material> material;
 
-    __host__ __device__ static inline void triangle_intersection(Vec3& v1, Vec3& v2, Vec3& v3, Ray& ray, Hit& prop){
-      //First find out where the ray intersects the triangle plane.
-      Vec3 plane_normal = cross(v2 - v1, v3 - v1);
-      //Cast a ray at one of the voxels
-      Vec3 ray_cst = v1 - ray.origin;
-      //The distance to a point on the plane
-      Real_t plane_distance = dot(ray_cst, ray.direc);
-      //The point in space where we intersect the plane
-      Vec3 intersection_pnt = plane_distance * ray.direc + ray.origin;
-
-      //Now time to check if the point is inside of the triangle
-      prop.hit = false;
-      prop.hit &= 
-    }
-    
-  public:  
     TriangleMesh(){}
 
-    __host__ __device__ virtual void intersectRay(Ray& ray, Hit& prop) {
-      for (int i = 0; i < number_of_triangles; i++){
-	Vec3 v1 = triangle_vertices[vertex_indices[i][0]];
-	Vec3 v2 = triangle_vertices[vertex_indices[i][1]];
-	Vec3 v3 = triangle_vertices[vertex_indices[i][2]];
-	TriangleMesh::triangle_intersection(v1, v2, v3, ray, prop);
+    TriangleMesh(std::vector<Vec3> const& vertices, std::vector<int[3]> const& v_indices, s_ptr<Material> mat) :
+      material(mat)
+    {
+      triangle_vertices = scene_alloc<Vec3>(vertices.size());
+      vertex_indices = scene_alloc<int[3]>(v_indices.size());
+      
+      for (unsigned int i = 0; i < vertices.size(); i++){
+	triangle_vertices[i] = vertices[i];
+      }
+
+      for (unsigned int i = 0; i < v_indices.size(); i++){
+	vertex_indices[i][0] = v_indices[i][0];
+	vertex_indices[i][1] = v_indices[i][1];
+	vertex_indices[i][2] = v_indices[i][2];
       }
     }
 
+#ifndef __CUDACC__
+    TriangleMesh(std::string const& fname, s_ptr<Material> material_type);
+    std::vector<s_ptr<Triangle> >  refine();
+#endif 
+
+
   };
 }
+
+#endif

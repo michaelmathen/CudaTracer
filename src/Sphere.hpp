@@ -13,17 +13,21 @@ namespace mm_ray {
   class Sphere : public Geometry {
     Vec3 center;
     Real_t radius;
-
+    s_ptr<Material> material;
   
   public:
 
     __host__ __device__ Sphere(){}
     
     __host__ __device__ Sphere(Vec3& center, Real_t radius, s_ptr<Material> mat) :
-      center(center), radius(radius), Geometry(mat) {
+      center(center), radius(radius), material(mat) {
 
     }
-  
+
+    __host__ __device__ virtual s_ptr<Material> getMaterial(){
+      return material;
+    }
+    
     __host__ __device__ inline  virtual bool intersectBox(Vec3& l,
 							 Vec3& u){
       Real_t r2 = radius * radius;
@@ -67,7 +71,7 @@ namespace mm_ray {
       Vec3 normal = prop.hit_location - center;
       
       prop.normal = normal * (1 / mag(normal));
-      prop.material = this->material;
+      prop.material = material;
     }
 
     __host__ __device__ inline virtual Vec3 getCenter() {

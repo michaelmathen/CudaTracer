@@ -92,6 +92,7 @@ namespace mm_ray {
     SPHERE,
     POINTLIGHT,
     AMBIENT_MAT,
+    TRIANGLE,
     NOT_VT
   };
 }

@@ -1,5 +1,5 @@
 #include "Geometry.hpp"
-
+#include <climits>
 
 #ifndef MM_POINT_LIGHT
 #define MM_POINT_LIGHT
@@ -31,6 +31,11 @@ namespace mm_ray {
 
     __host__ __device__ virtual Vec3 getLight() {
       return illumination;
+    }
+
+    __host__ __device__ virtual s_ptr<Material> getMaterial(){
+      //We don't have a material... This will segfault if someone calls it
+      return s_ptr<Material>(UINT_MAX);
     }
     
     static const Virtual_Type_Val type_id = POINTLIGHT;

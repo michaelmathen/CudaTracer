@@ -8,7 +8,7 @@ namespace mm_ray {
     
     int number_of_lights = 0;
     for (int i = 0; i < geom_length; i++){
-      s_ptr<Material> val = geometry_buffer[i]->material;
+      s_ptr<Material> val = geometry_buffer[i]->getMaterial();
       
       if (geometry_buffer[i]->isLight())
 	number_of_lights++;

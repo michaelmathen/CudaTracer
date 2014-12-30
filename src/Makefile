@@ -18,14 +18,15 @@ OUTPUT_DIR=./bin/
 CUDA_FILES = Renderer.cu \
              DistanceRenderer.cu \
              SceneAllocator.cu \
-             PhongRenderer.cu
+             PhongRenderer.cu          
 
 CUDA_OBJS = $(CUDA_FILES:%.cu=%.o)
 
 CXX_FILES= main.cpp \
            ParseScene.cpp \
            ParsingException.cpp \
-           SceneContainer.cpp
+           SceneContainer.cpp \
+           TriangleMesh.cpp
 
 CXX_OBJS = $(CXX_FILES:%.cpp=%.o)
 

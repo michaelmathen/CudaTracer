@@ -181,6 +181,14 @@ namespace mm_ray {
     }
   }
 
+  template<typename T>
+  inline s_ptr<T> get_offset(const T* pointer){
+    /*
+      Find where this pointer is located in the memory 
+      buffer.
+     */
+    return s_ptr<T>(reinterpret_cast<const char*>(pointer) - host_buffer);
+  }
   
   template<typename T>
   inline s_ptr<T> scene_alloc(const T& val){
