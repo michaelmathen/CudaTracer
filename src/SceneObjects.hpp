@@ -12,11 +12,11 @@
 //Include all of the material related stuff
 #include "Material.hpp"
 #include "PhongMaterial.hpp"
-#include "AmbientMaterial.hpp"
 
 //Include all of the geometry related stuff
 #include "Geometry.hpp"
 #include "Sphere.hpp"
 #include "PointLight.hpp"
+#include "Triangle.hpp"
 
 #endif

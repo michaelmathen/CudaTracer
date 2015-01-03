@@ -4,12 +4,19 @@ namespace mm_ray {
   void SceneContainer::insertGeometry(s_ptr<s_ptr<Geometry> > geom, int geom_length){
 
     geometry_buffer = geom;
+    cout << geom_length << endl;
     this->geom_length = geom_length;
     
     int number_of_lights = 0;
     for (int i = 0; i < geom_length; i++){
-      s_ptr<Material> val = geometry_buffer[i]->getMaterial();
+      /*
+      cerr << "Geom index " << geometry_buffer.index << endl;
+      cerr << "sptr index " << geometry_buffer[i].index << endl;
       
+      s_ptr<Geometry> gem = geometry_buffer[i];
+      Sphere* g = (Sphere*)(host_buffer + gem.index);
+      cerr << g->isLight() << endl;
+      */
       if (geometry_buffer[i]->isLight())
 	number_of_lights++;
       

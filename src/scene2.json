@@ -1,34 +1,47 @@
 {
     "camera":{
-	"cam_loc":[-1.0, 0.0, 0.0],
+	"cam_loc":[-5.0, 0.0, 0.0],
 	"cam_dir":[1.0, 0.0, 0.0],
 	"cam_up":[0.0, 0.0, 1.0]
     },
     "viewport_size":[1.5, 1.5],
     "output":[1000, 1000],
-    "samples":100,
+    "render_block":[4, 4],
+    "samples":2,
     "geometry":[
 	{
-	    "type":"sphere",
-	    "center":[4.5, 0.0, 0.0],
-	    "radius":1.0,
-	    "material":"shiny"
+	    "type":"point_light",
+	    "center":[-5.0, 2.0, 0.0],
+	    "illumination":[1.0, 1.0, 1.0]
 	},
 	{
-	    "type":"point_light",
-	    "center":[0.0, 2.0, 2.0],
-	    "illumination":[10.9, 10.9, 10.9]
+	    "type":"sphere",
+	    "center":[0.0, -2.0, -2.0],
+	    "radius":1.0,
+	    "material":"matte"
+	},
+	{
+	    "type":"mesh",
+	    "name":"teapot.obj",
+	    "transform":{
+		"scale":0.1,
+		"rotate":{
+		    "angle":180.0,
+		    "axis":[1.0,1.0,0.0]
+		},
+		"translate":[0.0, 0.0, 0.0]
+	    },
+	    "material":"matte"
 	}
-
     ],
     "materials":[
 	{
 	    "name":"matte",
 	    "type":"phong",
-	    "specular":0.0,
-	    "diffuse":0.9,
-	    "ambient":0.1,
-	    "shine":0.0,
+	    "specular":0.6,
+	    "diffuse":0.4,
+	    "ambient":0.0,
+	    "shine":5.0,
 	    "color":"BBBB00"
 	},
 	{

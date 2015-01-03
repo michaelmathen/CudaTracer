@@ -9,11 +9,9 @@ namespace mm_ray {
   class Hit {
   public:
     __host__ __device__ Hit(){
-      hit = false;
       distance = INFINITY;
     }
     
-    bool hit;
     Real_t distance;
     Vec3 normal;
     s_ptr<Material> material;

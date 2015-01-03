@@ -17,7 +17,7 @@
 #include "SceneObjects.hpp"
 #include "SceneContainer.hpp"
 #include "ParsingException.hpp"
-#include "AmbientMaterial.hpp"
+#include "Transform.hpp"
 #include "TriangleMesh.hpp"
 #include "ParseScene.hpp"
 
@@ -25,11 +25,11 @@
 using namespace mm_ray;
 using namespace std;
 
-void parseMaterials(rapidjson::Value& root,
+void parse_materials(rapidjson::Value& root,
 		    vector<s_ptr<Material> >& materials,
 		    vector<string>& material_names);
 
-void parseScene(rapidjson::Value& root, Scene& scn){
+void parse_scene(rapidjson::Value& root, Scene& scn){
   Vec2 viewport;
 
   auto& viewport_size = parse_err.AssertGetMember(root, "viewport_size");
@@ -52,16 +52,20 @@ void parseScene(rapidjson::Value& root, Scene& scn){
   }
   int samples = parse_err.get<int>(root, "samples");
   Scene lcl(viewport, output[0], output[1], cam_loc, cam_dir, cam_up, samples);
+  auto& render_block = parse_err.get(root, "render_block");
+  
+  lcl.render_block_x = parse_err.get<int>(render_block, 0);
+  lcl.render_block_y = parse_err.get<int>(render_block, 1);
   lcl.print();
   scn = lcl;
 }
 
-vector<s_ptr<Geometry> > parseGeometry(rapidjson::Value& root,
+vector<s_ptr<Geometry> > parse_geometry(rapidjson::Value& root,
 				vector<s_ptr<Material> >& materials,
 				vector<string>& material_names);
 
 template<typename Accelerator>
-void parseRenderTag(rapidjson::Value& root, 
+void parse_render_tag(rapidjson::Value& root, 
 		    Scene const& scn, 
 		    Accelerator const& acc,
 		    shared_ptr<Renderer<Accelerator> >& renderer){
@@ -80,10 +84,10 @@ void parseRenderTag(rapidjson::Value& root,
     throw &parse_err;
   }
 }
-template void parseRenderTag<mm_ray::SceneContainer>(rapidjson::Value&, Scene const&, mm_ray::SceneContainer const&, std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
+template void parse_render_tag<mm_ray::SceneContainer>(rapidjson::Value&, Scene const&, mm_ray::SceneContainer const&, std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
 
 template<typename Accelerator>
-void parseFile(string& fname, 
+void parse_file(string& fname, 
 	       Scene& scn, 
 	       Accelerator& container, 
 	       shared_ptr<Renderer<Accelerator> >& renderer){
@@ -111,9 +115,9 @@ void parseFile(string& fname,
   vector<s_ptr<Material> > mat;
   vector<string> mat_names;
   try {
-    parseMaterials(root, mat,mat_names); 
-    parseScene(root, scn);
-    auto geometry_objs = parseGeometry(root, mat, mat_names);
+    parse_materials(root, mat,mat_names); 
+    parse_scene(root, scn);
+    vector<s_ptr<Geometry> > geometry_objs = parse_geometry(root, mat, mat_names);
     s_ptr<s_ptr<Geometry> >  geom_ptrs = scene_alloc<s_ptr<Geometry> >(geometry_objs.size());
 
     for (int i = 0; i <geometry_objs.size(); i++){
@@ -121,7 +125,7 @@ void parseFile(string& fname,
     }
     
     container.insertGeometry(geom_ptrs, geometry_objs.size());
-    parseRenderTag<Accelerator>(root, scn, container, renderer);
+    parse_render_tag<Accelerator>(root, scn, container, renderer);
 
   } catch (ParsingException* e){
     *e << "\n";
@@ -130,30 +134,67 @@ void parseFile(string& fname,
   }
   fclose(fb);
 }
-template void parseFile<mm_ray::SceneContainer>(std::string&, Scene&, mm_ray::SceneContainer&, std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
+template void parse_file<mm_ray::SceneContainer>(std::string&,
+						Scene&,
+						mm_ray::SceneContainer&,
+						std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
 
-s_ptr<Geometry> parseSphere(rapidjson::Value& sphere_obj,
-			    vector<s_ptr<Material> >& materials,
-			    vector<string>& material_names,
-			    s_ptr<Material> default_material){
+Transform parse_transform(rapidjson::Value& transform_obj){
+  Real_t scale = parse_err.get<Real_t>(transform_obj, "scale");
+  Real_t rotation = parse_err.get<Real_t>(parse_err.get(transform_obj, "rotate"), "angle");
+  auto& axis_array = parse_err.get(parse_err.get(transform_obj, "rotate"), "axis");
+  Vec3 axis;
+  axis[0] = parse_err.get<Real_t>(axis_array, 0);
+  axis[1] = parse_err.get<Real_t>(axis_array, 1);
+  axis[2] = parse_err.get<Real_t>(axis_array, 2);
+
+  auto& translate_arr = parse_err.get(transform_obj, "translate");
+  Vec3 translate;
+  translate[0] = parse_err.get<Real_t>(translate_arr, 0);
+  translate[1] = parse_err.get<Real_t>(translate_arr, 1);
+  translate[2] = parse_err.get<Real_t>(translate_arr, 2);
+  
+  return Transform(scale, rotation, axis, translate);
+}
+
+s_ptr<TriangleMesh> parse_mesh(rapidjson::Value& mesh_obj,
+			      vector<s_ptr<Material> >& materials,
+			      vector<string>& material_names){
+  
+  Transform tran = parse_transform(parse_err.get(mesh_obj, "transform"));
+  auto fname = parse_err.get<string>(mesh_obj, "name");
+
+  TriangleMesh tr_mesh;
+  tr_mesh.parseObj(fname, tran);
+
+  auto material_name = parse_err.get<string>(mesh_obj, "material");
+  auto it = find(material_names.begin(), material_names.end(), material_name);
+  int mat_index = it - material_names.begin();
+
+  tr_mesh.setMaterial(materials[mat_index]);
+
+  s_ptr<TriangleMesh> trMesh = scene_alloc<TriangleMesh>(tr_mesh);
+  cout << "ambient light" << endl;
+  cout <<  static_pointer_cast<PhongMaterial, Material>(trMesh->material)->amb_light << endl;
+
+  return trMesh;
+}
+
+
+s_ptr<Geometry> parse_sphere(rapidjson::Value& sphere_obj,
+			     vector<s_ptr<Material> >& materials,
+			     vector<string>& material_names){
 
 
   
-  auto material = sphere_obj.FindMember("material");
-  s_ptr<Material> sphere_mat;
-  
-  if (material != sphere_obj.MemberEnd()) {
-    auto it = find(material_names.begin(), material_names.end(), sphere_obj["material"].GetString());
 
-    int mat_index = it - material_names.begin();
-    cout << mat_index << endl;
-    sphere_mat = materials[mat_index];
-  } else {
-    //If no material properties were selected then we
-    //use a extremely simple material.
-    sphere_mat = default_material;
-  }
-  
+  auto mat_name = parse_err.get<string>(sphere_obj, "material");
+  auto it = find(material_names.begin(), material_names.end(), mat_name);
+
+  int mat_index = it - material_names.begin();
+  cout << mat_index << endl;
+  s_ptr<Material> sphere_mat = materials[mat_index];
+
   Vec3 center;
   auto& center_vals = parse_err.get(sphere_obj, "center");
   for (auto i = 0; i < center_vals.Size(); i++)
@@ -164,7 +205,7 @@ s_ptr<Geometry> parseSphere(rapidjson::Value& sphere_obj,
   return dynamic_pointer_cast<Geometry, Sphere>(sphere_pointer);
 }
 
-s_ptr<Geometry>  parsePointLight(rapidjson::Value& point_obj){
+s_ptr<Geometry>  parse_point_light(rapidjson::Value& point_obj){
   Vec3 loc;
   Vec3 illum;
   auto& center = parse_err.get(point_obj, "center");
@@ -181,7 +222,7 @@ s_ptr<Geometry>  parsePointLight(rapidjson::Value& point_obj){
   return dynamic_pointer_cast<Geometry, PointLight>(pnt_light);
 }
 
-s_ptr<Material> parsePhongMaterial(rapidjson::Value& material) {
+s_ptr<Material> parse_phong_material(rapidjson::Value& material) {
   
   Real_t spec_light = parse_err.get<Real_t>(material, "specular");
   Real_t diff_light = parse_err.get<Real_t>(material, "diffuse");
@@ -203,7 +244,7 @@ s_ptr<Material> parsePhongMaterial(rapidjson::Value& material) {
 
 
 
-void parseMaterials(rapidjson::Value& root,
+void parse_materials(rapidjson::Value& root,
 		    vector<s_ptr<Material> >& materials,
 		    vector<string>& material_names){
 
@@ -222,26 +263,30 @@ void parseMaterials(rapidjson::Value& root,
     material_names.push_back(parse_err.get<string>(curr_matt, "name"));
 
     if (parse_err.get<string>(curr_matt, "type") == "phong"){
-      materials.push_back(parsePhongMaterial(curr_matt));
+      materials.push_back(parse_phong_material(curr_matt));
     }
   }
 }
 
-vector<s_ptr<Geometry> > parseGeometry(rapidjson::Value& root,
+vector<s_ptr<Geometry> > parse_geometry(rapidjson::Value& root,
 				       vector<s_ptr<Material> >& materials,
 				       vector<string>& material_names){
 
   vector<s_ptr<Geometry> > geom;
   auto& objects = parse_err.get(root, "geometry");
 
-  auto amb_material = scene_alloc<AmbientMaterial>();
 
-  auto default_material = dynamic_pointer_cast<Material, AmbientMaterial>(amb_material);
   for (int i = 0; i < objects.Size(); i++){
     if (parse_err.get<string>(objects[i], "type") == "sphere"){
-      geom.push_back(parseSphere(objects[i], materials, material_names, default_material));
+      geom.push_back(parse_sphere(objects[i], materials, material_names));
     } else if (parse_err.get<string>(objects[i], "type") == "point_light"){
-      geom.push_back(parsePointLight(objects[i]));
+      geom.push_back(parse_point_light(objects[i]));
+    } else if (parse_err.get<string>(objects[i], "type") == "mesh"){
+      //Parse the mesh object
+      s_ptr<TriangleMesh> mesh = parse_mesh(objects[i], materials, material_names);
+      //Now we break it appart
+      auto triangle_ptrs = refine(mesh);
+      geom.insert(geom.end(), triangle_ptrs.begin(), triangle_ptrs.end());
     }
   }
 

@@ -3,6 +3,7 @@
 #include "SceneObjects.hpp"
 
 
+
 namespace mm_ray {
   using namespace std;
   
@@ -36,8 +37,8 @@ namespace mm_ray {
     case SPHERE:
       new(buffer + index) Sphere();
       break;
-    case AMBIENT_MAT:
-      new(buffer + index) AmbientMaterial();
+    case TRIANGLE:
+      new(buffer + index) Triangle();
       break;
     case NOT_VT:
       break;
@@ -53,12 +54,11 @@ namespace mm_ray {
   }
 
   void expand_scene_buffer(){
-    //everytime we increase the buffer size by 1.5 times
+    //everytime we increase the buffer size by 2 times
     scene_buff_size = scene_buff_size + scene_buff_size;
-    char* tmp_buffer = (char*)malloc(scene_buff_size);
-    memcpy(tmp_buffer, host_buffer, curr_buff);
-    free(host_buffer);
-    host_buffer = tmp_buffer;
+    if (scene_buff_size == 0)
+      exit(0);
+    host_buffer = (char*)realloc(host_buffer, scene_buff_size);
   }
 
   

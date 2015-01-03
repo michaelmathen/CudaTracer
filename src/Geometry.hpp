@@ -17,7 +17,6 @@ namespace mm_ray {
     //This cannot do anything!!!!
     //Our serialization relies on this type of default
     //constructor
-    __host__ __device__ Geometry(){}
     
     __host__ __device__  bool intersectBox(Vec3& l, Vec3& u) {
       return false;

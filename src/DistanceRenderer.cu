@@ -68,14 +68,14 @@ DistanceRenderer<Accelerator>::DistanceRenderer(Scene const& scene, Accelerator 
 template<typename Accelerator>
 void DistanceRenderer<Accelerator>::Render(){
   
-  int image_size_x = (this->host_scene.output[0] / 16 + 1) * 16;
-  int image_size_y = (this->host_scene.output[1] / 16 + 1) * 16;
+  int image_size_x = this->host_scene.output[0];
+  int image_size_y = this->host_scene.output[1];
 
 
   //A block is a 16 x 16 chunk
-  dim3 block(16, 16);
+  dim3 block;
   //A grid is a bunch of blocks in a chunk of our image
-  dim3 grid(image_size_x / 16, image_size_y / 16);
+  dim3 grid(image_size_x, image_size_y);
 
   Real_t* device_pixel_buffer;
   cudaMalloc(&device_pixel_buffer, image_size_x * image_size_y * 3 * sizeof(Real_t));

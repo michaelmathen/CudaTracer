@@ -48,7 +48,7 @@ namespace mm_ray {
 
       //Project that ray onto the light direction
       Real_t tca = dot(L, ray.direc);
-      prop.hit = false;
+
       prop.distance = INFINITY;
       
       //If the projection is behind the ray origin then we don't intersect
@@ -65,7 +65,7 @@ namespace mm_ray {
       }
       
       prop.distance = tca - sqrt(radius * radius - d2);
-      prop.hit = true;
+  
       Vec3 vtmp = prop.distance * ray.direc;
       prop.hit_location = vtmp + ray.origin;
       Vec3 normal = prop.hit_location - center;

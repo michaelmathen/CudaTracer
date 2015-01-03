@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 
   string fname(argv[1]);
   try {
-    parseFile<SceneContainer>(fname, host_scene, cont, renderer);
+    parse_file<SceneContainer>(fname, host_scene, cont, renderer);
     cout << "Finished parsing file" << endl;
   } catch (ParsingException* e) {
     cout << "ParsingException" << endl;

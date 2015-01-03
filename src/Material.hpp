@@ -8,8 +8,6 @@ namespace mm_ray {
   class Material {
   public:
     
-    __host__ __device__ Material(){}
-    
     __host__ __device__ virtual bool isLight() {
       return false;
     }

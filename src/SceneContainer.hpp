@@ -42,6 +42,7 @@ public:
 	prop = tmp;
       }
     }
+
   }
 
   __host__ __device__ inline int getLightNumber(){

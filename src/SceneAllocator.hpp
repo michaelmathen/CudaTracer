@@ -69,8 +69,8 @@ namespace mm_ray {
       some nice type safety.
       Also we got pointer operations.
     */
-    unsigned int index;
   public:
+    unsigned int index;
     __host__ __device__ s_ptr() {}
     
     __host__ __device__ s_ptr(unsigned int index) : index(index)
@@ -181,49 +181,53 @@ namespace mm_ray {
     }
   }
 
+
+#ifndef __CUDACC__
   template<typename T>
-  inline s_ptr<T> get_offset(const T* pointer){
+  unsigned int get_starting_index(int buffer_start){
     /*
-      Find where this pointer is located in the memory 
-      buffer.
-     */
-    return s_ptr<T>(reinterpret_cast<const char*>(pointer) - host_buffer);
+      Ensures that the object starts at the right
+      byte boundary by padding the begining.
+      This is to deal with alignment issues.
+    */
+    if (buffer_start % alignof(T) == 0)
+      return buffer_start;
+    return (buffer_start / alignof(T) + 1) * alignof(T);
   }
-  
+#endif   
   template<typename T>
-  inline s_ptr<T> scene_alloc(const T& val){
+  inline s_ptr<T> scene_alloc_internal(){
     /*
       Scene_Allocate the value into our slab
     */
-    while (sizeof(T) + curr_buff > scene_buff_size) {
+
+    //Calculates the begining of the buffer index
+    unsigned int tmp_start = get_starting_index<T>(curr_buff);
+    while (sizeof(T) + tmp_start >= scene_buff_size) {
       expand_scene_buffer();
     }
     
-    //This is a placement new call.
-    new(host_buffer + curr_buff) T(val);
-    
-    unsigned int tmp = curr_buff;
-    curr_buff += sizeof(T);
-    addToTypeList<T>(tmp);
+    curr_buff = sizeof(T) + tmp_start;
+    addToTypeList<T>(tmp_start);
 
-    return s_ptr<T>(tmp);
+    return s_ptr<T>(tmp_start);
   }
+
+  template<typename T>
+  inline s_ptr<T> scene_alloc(const T& val){
+    //Allocate the memory block
+    s_ptr<T> start = scene_alloc_internal<T>();
+    new(host_buffer + start.index) T(val);
+    return start;
+  }
+
   
   template<typename T>
   inline s_ptr<T> scene_alloc(){
-    /*
-      Scene_Allocate the value into our slab
-    */
-    while (sizeof(T) + curr_buff > scene_buff_size) {
-      expand_scene_buffer();
-    }
-    //This is a placement new call.
-    new(host_buffer + curr_buff) T();
-    
-    unsigned int tmp = curr_buff;
-    curr_buff += sizeof(T);
-    addToTypeList<T>(tmp);
-    return s_ptr<T>(tmp);
+    //Allocate the memory block
+    s_ptr<T> start = scene_alloc_internal<T>();
+    new(host_buffer + start.index) T();
+    return start;
   }
   
   template<typename T>
@@ -231,18 +235,22 @@ namespace mm_ray {
     /*
 	Scene_Allocate the value into our slab
     */
-    while (sizeof(T) * n + curr_buff > scene_buff_size) {
+    if (n == 0){
+      //Return a pointer that will segfault if we derefference
+      return s_ptr<T>(UINT_MAX);
+    }
+    
+    //Get the correct allignment for the first element
+    unsigned int alligned_start = get_starting_index<T>(curr_buff);
+    
+    while (sizeof(T) * n + alligned_start >= scene_buff_size) {
       expand_scene_buffer();
     }
-    
-    for (int i = 0; i < n; i++){
-      new(host_buffer + i * sizeof(T)) T();
+    for (unsigned int i = 0; i < n; i++){
+      new(host_buffer + alligned_start + i * sizeof(T)) T();
     }
-    
-    int tmp = curr_buff;
-    curr_buff += sizeof(T) * n;
-    addToTypeList<T>(tmp);
-    return s_ptr<T>(tmp);
+    curr_buff = alligned_start + n * sizeof(T);
+    return s_ptr<T>(alligned_start);
   }
 #endif  
   

@@ -9,59 +9,72 @@
 namespace mm_ray {
 
   class Triangle : public Geometry {
-    
+
     //Pointer to the trianlge mesh that this triange is from
     s_ptr<TriangleMesh> mesh_ptr;
     //Index of a triangle
     unsigned int triangle_index;
-    
-    __host__ __device__ static inline void triangle_intersection(Vec3& v1,
-								 Vec3& v2,
-								 Vec3& v3,
-								 Ray  ray,
-								 Hit& prop){
-      //Cast a ray at one of the voxels
-      //The distance to a point on the plane
-      //The point in space where we intersect the plane
-      
-      Real_t dist_to_intersect = dot(v1 - ray.origin, ray.direc);
-      Vec3 intersection_pnt = dist_to_intersect * ray.direc + ray.origin;
-      Vec3 normal = cross(v2 - v1, v3 - v1);
-      
-      //Now time to check if the point is inside of the triangle
-      if ((dot(cross(v2 - v1, intersection_pnt - v1), normal)  >= 0) &&
-	  (dot(cross(v3 - v2, intersection_pnt - v2), normal) >= 0) &&
-	  (dot(cross(v1 - v3, intersection_pnt - v3), normal) >= 0)) {
-	prop.hit = true;
-	prop.distance = dist_to_intersect;
-	prop.normal = normal;
-      }
-    }
-    
-  public:
+  public:    
 
-    Triangle() {}
+
+    __host__ __device__ Triangle() {}
+
+    
     
     Triangle(s_ptr<TriangleMesh> const& triangle_mesh, unsigned int tri_ix) :
       mesh_ptr(triangle_mesh),
       triangle_index(tri_ix) {}
-    
-    
+
+    /*
     __host__ __device__ virtual void intersectRay(Ray& ray, Hit& prop) {
-      triangle_intersection(mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][0]],
-			    mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][1]],
-			    mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][2]],
-			    ray,
-			    prop);
-      if (prop.hit)
+      Tri_vert& tri = mesh_ptr->vertex_indices[triangle_index];
+      s_ptr<Vec3> vertices = mesh_ptr->triangle_vertices;
+      Vec3 v1 = vertices[tri.x];
+      Vec3 v2 = vertices[tri.y];
+      Vec3 v3 = vertices[tri.z];
+      
+    }
+    */
+    __host__ __device__ virtual void intersectRay(Ray& ray, Hit& prop) {
+      //Todo this is pretty inefficient
+      Tri_vert& tri = mesh_ptr->vertex_indices[triangle_index];
+      s_ptr<Vec3> vertices = mesh_ptr->triangle_vertices;
+      Vec3 v1 = vertices[tri.x];
+      Vec3 v2 = vertices[tri.y];
+      Vec3 v3 = vertices[tri.z];
+      
+      Vec3 normal = cross(v2 - v1, v3 - v1);
+      normal = normal / mag(normal);
+
+      Real_t t = dot( v1 - ray.origin, normal)  / dot(ray.direc, normal);
+      if (t <= 0.0) {
+	prop.distance = INFINITY;
+	return;
+      }
+      
+      Vec3 x = ray.direc * t + ray.origin;
+      
+      if (dot(cross(v2 - v1, x - v1), normal) >= 0 &&
+	  dot(cross(v3 - v2, x - v2), normal) >= 0 &&
+	  dot(cross(v1 - v3, x - v3), normal) >= 0) {
+	Real_t tmp_val = dot(normal, ray.direc);
+	prop.normal = -tmp_val / (Real_t)fabs(tmp_val) * normal;
+	prop.distance = t;
+	//prop.normal = normal;
 	prop.material = mesh_ptr->material;
+	prop.hit_location = x;
+	return ;
+      } else {
+	prop.distance = INFINITY;
+	return ;
+      }
     }
 
     __host__ __device__ inline virtual Vec3 getCenter() {
       
-      Vec3 v1 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][0]];
-      Vec3 v2 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][1]];
-      Vec3 v3 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index][2]];
+      Vec3 v1 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index].x];
+      Vec3 v2 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index].y];
+      Vec3 v3 = mesh_ptr->triangle_vertices[mesh_ptr->vertex_indices[triangle_index].z];
       return Vec3((v1 + v2 + v3) / (Real_t)3.0);
     }
 

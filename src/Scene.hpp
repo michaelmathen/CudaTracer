@@ -13,6 +13,8 @@ public:
   Vec2 viewport;
   int output[2];
   int samples;
+  int render_block_x;
+  int render_block_y;
   
   Scene(){}
   Scene(Vec2& view,
