@@ -85,16 +85,7 @@ typedef VecN<Real_t, 4> Vec4;
 typedef VecN<Real_t, 3> Vec3;
 typedef VecN<Real_t, 2> Vec2;
 
-namespace mm_ray {
-  enum Virtual_Type_Val {
-    MATERIAL,
-    PHONG_MAT,
-    SPHERE,
-    POINTLIGHT,
-    TRIANGLE,
-    NOT_VT
-  };
-}
+
 
 
 #endif
