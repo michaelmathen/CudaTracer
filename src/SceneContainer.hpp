@@ -1,62 +1,54 @@
 #include <algorithm>
 #include <iostream>
-
+#include <memory>
 #include "ray_defs.hpp"
-#include "SceneObjects.hpp"
 #include "Geometry.hpp"
-#include "Sphere.hpp"
-
+#include "Managed.hpp"
 
 #ifndef MM_SCENE_CONTAINER
 #define MM_SCENE_CONTAINER
 namespace mm_ray {
 
-class SceneContainer {
+  class SceneContainer : public Managed {
   
-  s_ptr<s_ptr<Geometry> > geometry_buffer;
-  s_ptr<s_ptr<Geometry> > light_sources;
-  
-  //int material_length;
-  int geom_length;
-  int light_length;
-  
-public:
-  SceneContainer(){
-  }
-
-
-  void insertGeometry(s_ptr<s_ptr<Geometry> > geom, int geom_length);
-  
-  ~SceneContainer(){
-  }
-
-
-  void initialize(){}
-
-  __host__ __device__ void intersect(Ray& ray, Hit& prop){
-    Hit tmp;
-    prop.distance = INFINITY;
-    for (int i = 0; i < geom_length; i++){
-      geometry_buffer[i]->intersectRay(ray, tmp);
-      if (tmp.distance < prop.distance){
-	prop = tmp;
+    Geometry** geometry_buffer;
+    Geometry** light_sources;
+    
+    unsigned geom_length;
+    unsigned light_length;
+    unsigned material_length;
+    
+  public:
+    
+    SceneContainer(){}
+    
+    ~SceneContainer();
+    
+    void Insert_Geometry(std::vector<Geometry*>&);
+    
+    void initialize(){}
+    
+    __host__ __device__ void intersect(Ray const& ray, Hit& prop) const {
+      Hit tmp;
+      prop.distance = INFINITY;
+      for (int i = 0; i < geom_length; i++){
+	geometry_buffer[i]->intersectRay(ray, tmp);
+	if (tmp.distance < prop.distance){
+	  prop = tmp;
+	}
       }
+      
     }
+    
+    __host__ __device__ inline int getLightNumber() const {
+      return light_length;
+    }
+    
+    __host__ __device__ inline Geometry const* getLight(int i) const {
+      return light_sources[i];
+    }
+  };
 
-  }
-
-  __host__ __device__ inline int getLightNumber(){
-    return light_length;
-  }
-
-  
-  __host__ __device__ inline s_ptr<Geometry> getLight(int i){
-    return light_sources[i];
-  }
-  
-
-  
-};
-
+  typedef std::vector<std::auto_ptr<Managed> > SceneContainerHost;
 }
 #endif

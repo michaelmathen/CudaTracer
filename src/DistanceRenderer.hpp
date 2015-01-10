@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "SceneContainer.hpp"
-#include "SceneObjects.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "ray_defs.hpp"
@@ -16,7 +15,7 @@ namespace mm_ray {
     
   public:
 
-    DistanceRenderer(Scene const& scn, Accelerator const& acc);
+    DistanceRenderer(Scene const& scn, Accelerator const* acc);
     
     virtual ~DistanceRenderer();
     virtual void Render();

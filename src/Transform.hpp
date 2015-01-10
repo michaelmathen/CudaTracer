@@ -67,7 +67,7 @@ namespace mm_ray {
 
     }
     
-    inline Vec3 applyTransform(Vec3 const& point) const {
+    __host__ __device__ inline Vec3 applyTransform(Vec3 const& point) const {
       Vec3 rotated_pnt;
       rotated_pnt[0] = dot(r_1, point);
       rotated_pnt[1] = dot(r_2, point);

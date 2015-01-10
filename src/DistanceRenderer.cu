@@ -1,8 +1,7 @@
 #include <cstdio>
 #include <vector>
-
+#include <cmath>
 #include "SceneContainer.hpp"
-#include "SceneObjects.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "ray_defs.hpp"
@@ -17,15 +16,10 @@ namespace mm_ray {
 template<typename Accel>
 __global__
 void render_pixel(Scene scene,
-		  Accel objects,
-		  void* dev_memory,
+		  Accel const* objects,
 		  int scene_x,
 		  int scene_y,
 		  Real_t* pixel_out){
-  
-  //Copy over our memory space
-  //so that now all of our pointers should work like they did on the host
-  device_buffer = (char*)dev_memory;
   
   /* 
      Renders a single pixel in the image
@@ -33,23 +27,21 @@ void render_pixel(Scene scene,
   int px = threadIdx.x + blockDim.x * blockIdx.x;
   int py = threadIdx.y + blockDim.y * blockIdx.y;
   
-  float norm_i = ((px / (float)scene.output[0]) - .5) * scene.viewport[0];
-  float norm_j = ((py / (float)scene.output[1]) - .5) * scene.viewport[1];
+  Real_t norm_i = ((px / (Real_t)scene.output[0]) - .5) * scene.viewport[0];
+  Real_t norm_j = ((py / (Real_t)scene.output[1]) - .5) * scene.viewport[1];
   
   Vec3 direc;
-  direc[0] = norm_i * scene.cam_right[0] + norm_j * scene.cam_up[0] + scene.cam_dir[0];
-  direc[1] = norm_i * scene.cam_right[1] + norm_j * scene.cam_up[1] + scene.cam_dir[1];
-  direc[2] = norm_i * scene.cam_right[2] + norm_j * scene.cam_up[2] + scene.cam_dir[2];
+  direc = norm_i * scene.cam_right + norm_j * scene.cam_up + scene.cam_dir;
 
   //Normalize ray
-  direc = direc * (1 / mag(direc));
+  direc = direc / mag(direc);
 
   Ray ray(direc, scene.cam_loc);
 
   //Run our ray tracing algorithm
 
   Hit prop;
-  objects.intersect(ray, prop);
+  objects->intersect(ray, prop);
 
   int pix_ix = (py * scene_x + px) * 3;
 
@@ -63,7 +55,8 @@ void render_pixel(Scene scene,
 
 
 template<typename Accelerator>
-DistanceRenderer<Accelerator>::DistanceRenderer(Scene const& scene, Accelerator const& accel) : Renderer<Accelerator>(scene, accel) {}
+DistanceRenderer<Accelerator>::DistanceRenderer(Scene const& scene, Accelerator const* accel) 
+  : Renderer<Accelerator>(scene, accel) {}
 
 template<typename Accelerator>
 void DistanceRenderer<Accelerator>::Render(){
@@ -80,14 +73,9 @@ void DistanceRenderer<Accelerator>::Render(){
   Real_t* device_pixel_buffer;
   cudaMalloc(&device_pixel_buffer, image_size_x * image_size_y * 3 * sizeof(Real_t));
 
-  //Since we don't use pointer anywhere we can just serialize this one object
-  //and everthing should work realy nice on the gpu
-  void* dev_Memory = serialize_scene_alloc();
-  
   //Finally run the raytracing kernel
   render_pixel<Accelerator><<<grid, block>>>(this->host_scene,
 					     this->host_accel,
-					     dev_Memory,
 					     image_size_x,
 					     image_size_y,
 					     device_pixel_buffer);

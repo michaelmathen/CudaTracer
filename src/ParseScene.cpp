@@ -1,33 +1,31 @@
-
 #include <cstdlib>
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
-#include "rapidjson/error/error.h"
-#include "rapidjson/error/en.h"
 #include <fstream>
 #include <vector>
 #include <iostream>
 #include <memory>
+
+#include "rapidjson/document.h"
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/error/error.h"
+#include "rapidjson/error/en.h"
+
 #include "ray_defs.hpp"
-#include "SceneAllocator.hpp"
 #include "Renderer.hpp"
 #include "PhongRenderer.hpp"
 #include "DistanceRenderer.hpp"
-#include "PhongMaterial.hpp"
-#include "SceneObjects.hpp"
 #include "SceneContainer.hpp"
 #include "ParsingException.hpp"
 #include "Transform.hpp"
-#include "TriangleMesh.hpp"
+#include "GeometryData.hpp"
 #include "ParseScene.hpp"
 
 
-using namespace mm_ray;
 using namespace std;
-
+namespace mm_ray {
 void parse_materials(rapidjson::Value& root,
-		    vector<s_ptr<Material> >& materials,
-		    vector<string>& material_names);
+		     vector<Material*>& materials,
+		     vector<string>& material_names,
+		     SceneContainerHost&);
 
 void parse_scene(rapidjson::Value& root, Scene& scn){
   Vec2 viewport;
@@ -60,37 +58,41 @@ void parse_scene(rapidjson::Value& root, Scene& scn){
   scn = lcl;
 }
 
-vector<s_ptr<Geometry> > parse_geometry(rapidjson::Value& root,
-				vector<s_ptr<Material> >& materials,
-				vector<string>& material_names);
+
+void parse_geometry(rapidjson::Value&,
+		    vector<Material*>&,
+		    vector<string>&,
+		    vector<Geometry*>&, 
+		    SceneContainerHost&);
+
 
 template<typename Accelerator>
 void parse_render_tag(rapidjson::Value& root, 
-		    Scene const& scn, 
-		    Accelerator const& acc,
-		    shared_ptr<Renderer<Accelerator> >& renderer){
+		      Scene const& scn, 
+		      shared_ptr<Accelerator> acc,
+		      Renderer<Accelerator>** renderer){
   /*
     This parses the renderer tag allowing us to choose 
     the renderer of the current scene
    */
   auto& renderer_tag = parse_err.get(root, "renderer");
   auto render_name = parse_err.get<string>(renderer_tag, "type");
+
   if (render_name == "phong"){
-    renderer = dynamic_pointer_cast<Renderer<Accelerator> >(make_shared<PhongRenderer<Accelerator> >(scn, acc));
+    *renderer = new PhongRenderer<Accelerator>(scn, acc.get());
   } else if (render_name == "distance") {
-    renderer = dynamic_pointer_cast<Renderer<Accelerator> >(make_shared<DistanceRenderer<Accelerator> >(scn, acc));
+    *renderer = new DistanceRenderer<Accelerator>(scn, acc.get());
   } else {
     parse_err << "Unknown renderer type \"" << render_name << "\"\n";
     throw &parse_err;
   }
 }
-template void parse_render_tag<mm_ray::SceneContainer>(rapidjson::Value&, Scene const&, mm_ray::SceneContainer const&, std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
 
-template<typename Accelerator>
 void parse_file(string& fname, 
-	       Scene& scn, 
-	       Accelerator& container, 
-	       shared_ptr<Renderer<Accelerator> >& renderer){
+		Scene& scn,
+		shared_ptr<SceneContainer> container,
+		Renderer<SceneContainer>** renderer,
+		SceneContainerHost& managed_data){
   
   FILE *fb = fopen(fname.c_str(), "r");
 
@@ -112,21 +114,18 @@ void parse_file(string& fname,
     throw &parse_err;
   }
   auto& root = dynamic_cast<rapidjson::Value&>(root_doc);
-  vector<s_ptr<Material> > mat;
   vector<string> mat_names;
   try {
-    parse_materials(root, mat,mat_names); 
+    vector<Material*> mat;
+    vector<Geometry*> geometry_objs;
+    parse_materials(root, mat, mat_names, managed_data);
     parse_scene(root, scn);
-    vector<s_ptr<Geometry> > geometry_objs = parse_geometry(root, mat, mat_names);
-    s_ptr<s_ptr<Geometry> >  geom_ptrs = scene_alloc<s_ptr<Geometry> >(geometry_objs.size());
 
-    for (int i = 0; i <geometry_objs.size(); i++){
-      geom_ptrs[i] = geometry_objs[i];
-    }
-    
-    container.insertGeometry(geom_ptrs, geometry_objs.size());
-    parse_render_tag<Accelerator>(root, scn, container, renderer);
+    parse_geometry(root, mat, mat_names, geometry_objs, managed_data);
+    //cout << geometry_objs[0]->isLight() << endl;
+    container->Insert_Geometry(geometry_objs);
 
+    parse_render_tag<SceneContainer>(root, scn, container, renderer);
   } catch (ParsingException* e){
     *e << "\n";
     *e << "Parsing error in file: " << fname << "\n";
@@ -134,10 +133,6 @@ void parse_file(string& fname,
   }
   fclose(fb);
 }
-template void parse_file<mm_ray::SceneContainer>(std::string&,
-						Scene&,
-						mm_ray::SceneContainer&,
-						std::shared_ptr<mm_ray::Renderer<mm_ray::SceneContainer> >&);
 
 Transform parse_transform(rapidjson::Value& transform_obj){
   Real_t scale = parse_err.get<Real_t>(transform_obj, "scale");
@@ -157,9 +152,9 @@ Transform parse_transform(rapidjson::Value& transform_obj){
   return Transform(scale, rotation, axis, translate);
 }
 
-s_ptr<TriangleMesh> parse_mesh(rapidjson::Value& mesh_obj,
-			      vector<s_ptr<Material> >& materials,
-			      vector<string>& material_names){
+TriangleMesh* parse_mesh(rapidjson::Value& mesh_obj,
+			 vector<Material*> & materials,
+			 vector<string>& material_names){
   
   Transform tran = parse_transform(parse_err.get(mesh_obj, "transform"));
   auto fname = parse_err.get<string>(mesh_obj, "name");
@@ -173,16 +168,12 @@ s_ptr<TriangleMesh> parse_mesh(rapidjson::Value& mesh_obj,
 
   tr_mesh.setMaterial(materials[mat_index]);
 
-  s_ptr<TriangleMesh> trMesh = scene_alloc<TriangleMesh>(tr_mesh);
-  cout << "ambient light" << endl;
-  cout <<  static_pointer_cast<PhongMaterial, Material>(trMesh->material)->amb_light << endl;
-
-  return trMesh;
+  return new TriangleMesh(tr_mesh);
 }
 
 
-s_ptr<Geometry> parse_sphere(rapidjson::Value& sphere_obj,
-			     vector<s_ptr<Material> >& materials,
+Geometry* parse_sphere(rapidjson::Value& sphere_obj,
+			     vector<Material*>& materials,
 			     vector<string>& material_names){
 
 
@@ -193,7 +184,7 @@ s_ptr<Geometry> parse_sphere(rapidjson::Value& sphere_obj,
 
   int mat_index = it - material_names.begin();
   cout << mat_index << endl;
-  s_ptr<Material> sphere_mat = materials[mat_index];
+  Material* sphere_mat = materials[mat_index];
 
   Vec3 center;
   auto& center_vals = parse_err.get(sphere_obj, "center");
@@ -201,11 +192,10 @@ s_ptr<Geometry> parse_sphere(rapidjson::Value& sphere_obj,
     center[i] = parse_err.get<double>(center_vals, i);
   
   auto radius = parse_err.get<double>(sphere_obj, "radius");
-  auto sphere_pointer = scene_alloc<Sphere>(Sphere(center, radius, sphere_mat));
-  return dynamic_pointer_cast<Geometry, Sphere>(sphere_pointer);
+  return new Sphere(center, radius, sphere_mat);
 }
 
-s_ptr<Geometry>  parse_point_light(rapidjson::Value& point_obj){
+Geometry*  parse_point_light(rapidjson::Value& point_obj){
   Vec3 loc;
   Vec3 illum;
   auto& center = parse_err.get(point_obj, "center");
@@ -218,11 +208,10 @@ s_ptr<Geometry>  parse_point_light(rapidjson::Value& point_obj){
   illum[1] = parse_err.get<Real_t>(illumination, 1);
   illum[2] = parse_err.get<Real_t>(illumination, 2);
 
-  auto pnt_light = scene_alloc<PointLight>(PointLight(illum, loc));
-  return dynamic_pointer_cast<Geometry, PointLight>(pnt_light);
+  return new PointLight(illum, loc);
 }
 
-s_ptr<Material> parse_phong_material(rapidjson::Value& material) {
+Material* parse_phong_material(rapidjson::Value& material) {
   
   Real_t spec_light = parse_err.get<Real_t>(material, "specular");
   Real_t diff_light = parse_err.get<Real_t>(material, "diffuse");
@@ -238,15 +227,16 @@ s_ptr<Material> parse_phong_material(rapidjson::Value& material) {
   color[0] = ((color_val >> 16) & 255) / 255.0;  
   color[1] = ((color_val >> 8) & 255) / 255.0;
   color[2] = (color_val & 255) / 255.0;
-  auto scn = scene_alloc<PhongMaterial>(PhongMaterial(color, spec_light, diff_light, amb_light, shine));
-  return dynamic_pointer_cast<Material, PhongMaterial>(scn);
+
+  return new PhongMaterial(color, spec_light, diff_light, amb_light, shine);
 }
 
 
 
 void parse_materials(rapidjson::Value& root,
-		    vector<s_ptr<Material> >& materials,
-		    vector<string>& material_names){
+		     vector<Material*>& materials,
+		     vector<string>& material_names,
+		     SceneContainerHost& managed_data){
 
   /*
     Materials are kept track of using their names.
@@ -263,34 +253,39 @@ void parse_materials(rapidjson::Value& root,
     material_names.push_back(parse_err.get<string>(curr_matt, "name"));
 
     if (parse_err.get<string>(curr_matt, "type") == "phong"){
-      materials.push_back(parse_phong_material(curr_matt));
+      auto tmp = parse_phong_material(curr_matt);
+      managed_data.push_back(auto_ptr<Managed>(tmp));
+      materials.push_back(tmp);
     }
   }
 }
 
-vector<s_ptr<Geometry> > parse_geometry(rapidjson::Value& root,
-				       vector<s_ptr<Material> >& materials,
-				       vector<string>& material_names){
+void parse_geometry(rapidjson::Value& root,
+		    vector<Material*>& materials,
+		    vector<string>& material_names,
+		    vector<Geometry*>& geometry, 
+		    SceneContainerHost& scene_data){
 
-  vector<s_ptr<Geometry> > geom;
   auto& objects = parse_err.get(root, "geometry");
 
 
   for (int i = 0; i < objects.Size(); i++){
     if (parse_err.get<string>(objects[i], "type") == "sphere"){
-      geom.push_back(parse_sphere(objects[i], materials, material_names));
+       auto tmp = parse_sphere(objects[i], materials, material_names);
+      geometry.push_back(tmp);
+      scene_data.push_back(auto_ptr<Managed>(tmp));
     } else if (parse_err.get<string>(objects[i], "type") == "point_light"){
-      geom.push_back(parse_point_light(objects[i]));
+      auto tmp = parse_point_light(objects[i]);
+      geometry.push_back(tmp);
+      scene_data.push_back(auto_ptr<Managed>(tmp));
     } else if (parse_err.get<string>(objects[i], "type") == "mesh"){
       //Parse the mesh object
-      s_ptr<TriangleMesh> mesh = parse_mesh(objects[i], materials, material_names);
+      TriangleMesh* mesh = parse_mesh(objects[i], materials, material_names);
+      scene_data.push_back(auto_ptr<Managed>(mesh));
       //Now we break it appart
       auto triangle_ptrs = refine(mesh);
-      geom.insert(geom.end(), triangle_ptrs.begin(), triangle_ptrs.end());
+      geometry.insert(geometry.end(), triangle_ptrs.begin(), triangle_ptrs.end());
     }
   }
-
-  return geom;
 }
-
-
+}

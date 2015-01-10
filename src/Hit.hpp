@@ -1,11 +1,11 @@
-#include "SceneObjects.hpp"
-#include "SceneAllocator.hpp"
-#include "Material.hpp"
 #include "ray_defs.hpp"
 
 #ifndef MM_HIT
 #define MM_HIT
 namespace mm_ray {
+
+  class Material;
+  
   class Hit {
   public:
     __host__ __device__ Hit(){
@@ -14,7 +14,7 @@ namespace mm_ray {
     
     Real_t distance;
     Vec3 normal;
-    s_ptr<Material> material;
+    Material const* material;
     Vec3 hit_location;
   };
 }

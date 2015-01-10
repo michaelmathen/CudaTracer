@@ -10,9 +10,8 @@
 #include <boost/algorithm/string.hpp>
 #include "ParsingException.hpp"
 
-#include "TriangleMesh.hpp"
-#include "SceneAllocator.hpp"
-#include "Triangle.hpp"
+#include "GeometryData.hpp"
+#include "Geometry.hpp"
 #include "Transform.hpp"
 #include "ray_defs.hpp"
 
@@ -20,22 +19,21 @@
 namespace mm_ray {
   using namespace std;
 
-  void TriangleMesh::setMaterial(s_ptr<Material> mat){
+  void TriangleMesh::setMaterial(Material* mat){
     this->material = mat;
   }
 
   
-  vector<s_ptr<Geometry> > refine(s_ptr<TriangleMesh> trMesh){
+  vector<Geometry*> refine(TriangleMesh* trMesh){
     /*
       Break the triangle mesh into sub triangles.
     */
-    vector<s_ptr<Geometry> > triangle_arr;
+    vector<Geometry*> triangle_arr;
     triangle_arr.resize(trMesh->number_of_triangles);
     cout << trMesh->number_of_triangles << "number of triangles" << endl;
 
     for (unsigned int i = 0; i < trMesh->number_of_triangles; i++){
-      s_ptr<Triangle> triangle = scene_alloc<Triangle>(Triangle(trMesh, i));
-      triangle_arr[i] = dynamic_pointer_cast<Geometry, Triangle>(triangle);
+      triangle_arr[i] = new Triangle(trMesh, i);
     }
     return triangle_arr;
   }
@@ -129,9 +127,10 @@ namespace mm_ray {
 	continue;
     }
     
-    //Now copy this over to our object mesh 
-    triangle_vertices = scene_alloc<Vec3>(vertices.size());
-    vertex_indices = scene_alloc<Tri_vert>(triangles.size());
+    //Now copy this over to our object mesh
+    
+    triangle_vertices = (Vec3*)Cuda_Malloc(vertices.size() * sizeof(Vec3));
+    vertex_indices = new Tri_vert[triangles.size()];
     
     for (unsigned int i = 0; i < vertices.size(); i++){
       triangle_vertices[i] = vertices[i];

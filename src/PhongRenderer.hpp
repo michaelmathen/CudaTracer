@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "SceneContainer.hpp"
-#include "SceneObjects.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "ray_defs.hpp"
@@ -19,7 +18,7 @@ namespace mm_ray {
     
   public:
 
-    PhongRenderer(Scene const& scn, Accelerator const& acc);
+    PhongRenderer(Scene const& scn, Accelerator const* acc);
     
     virtual ~PhongRenderer();
     virtual void Render();

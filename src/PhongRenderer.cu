@@ -3,7 +3,8 @@
 #include <curand_kernel.h>
 
 #include "SceneContainer.hpp"
-#include "SceneObjects.hpp"
+#include "Geometry.hpp"
+#include "Material.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "PhongRenderer.hpp"
@@ -17,8 +18,7 @@ namespace mm_ray {
 template<typename Accel>
 __global__
 void render_pixel_phong(Scene scene,
-			Accel objects,
-			void* dev_memory,
+			Accel const* objects,
 			int scene_lower_x,
 			int scene_lower_y,
 			int scene_width,
@@ -29,7 +29,6 @@ void render_pixel_phong(Scene scene,
   
   //Copy over our memory space
   //so that now all of our pointers should work like they did on the host
-  device_buffer = (char*)dev_memory;
   
   /* 
      Renders a single pixel in the image
@@ -38,7 +37,6 @@ void render_pixel_phong(Scene scene,
   //This is the current location in the output image block
   int pixel_block_x = threadIdx.x + blockDim.x * blockIdx.x;
   int pixel_block_y = threadIdx.y + blockDim.y * blockIdx.y;
-
   //the index into the random numbers
   int rand_index = (pixel_block_y * chunk_width + pixel_block_x) * 2;
   float rand_x = random_values[rand_index];
@@ -65,18 +63,19 @@ void render_pixel_phong(Scene scene,
   //Run our ray tracing algorithm
 
   Hit prop;
-  objects.intersect(ray, prop);
+  objects->intersect(ray, prop);
+
 
   if (prop.distance < INFINITY) {
-    s_ptr<PhongMaterial> pmat = static_pointer_cast<PhongMaterial, Material>(prop.material);
+    PhongMaterial const* pmat = static_cast<PhongMaterial const*>(prop.material);
 
     //Draw a ray to each light
     Vec3 pixel_color = pmat->color * pmat->amb_light;
     //printf("prop.distance = %f\n", pmat->color[1]);
     
-    for (int i = 0; i < objects.getLightNumber(); i++){
+    for (int i = 0; i < objects->getLightNumber(); i++){
       //We only support point lights so this will not be accurate for area lights
-      s_ptr<Geometry> light_source = objects.getLight(i);
+      Geometry const* light_source = objects->getLight(i);
       
       //Get a ray going from our center to the light source
       Vec3 ctmp = light_source->getCenter();
@@ -93,7 +92,7 @@ void render_pixel_phong(Scene scene,
       Vec3 new_ray_origin = prop.hit_location + prop.normal * 1e-6f;
 
       Ray shadow_ray(new_ray, new_ray_origin);
-      objects.intersect(shadow_ray, shadow_prop);
+      objects->intersect(shadow_ray, shadow_prop);
      
       Real_t diff = pmat->diff_light;
       Real_t spec = pmat->spec_light;
@@ -103,7 +102,6 @@ void render_pixel_phong(Scene scene,
 			  spec * pow(max(dot((new_ray - ray.direc) / 2.0f, prop.normal), 0.f), shine) * pmat->color);
 
       pixel_color += (Real_t)(shadow_prop.distance > length_to_light) * light_contr * light_source->getLight();
-
     }
     
     pixel_out[pix_ix] += pixel_color[0];
@@ -127,7 +125,8 @@ void average_samples(Real_t* pixel_mem, int samples) {
 
   
 template<typename Accelerator>
-PhongRenderer<Accelerator>::PhongRenderer(Scene const& scene, Accelerator const& accel) : Renderer<Accelerator>(scene, accel) {}
+PhongRenderer<Accelerator>::PhongRenderer(Scene const& scene, Accelerator const* accel) 
+  : Renderer<Accelerator>(scene, accel) {}
 
 template<typename Accelerator>
 void PhongRenderer<Accelerator>::Render(){
@@ -147,10 +146,6 @@ void PhongRenderer<Accelerator>::Render(){
 
   Real_t* device_pixel_buffer;
   cudaMalloc(&device_pixel_buffer, image_size_x * image_size_y * 3 * sizeof(Real_t));
-
-  //Since we don't use pointers anywhere we can just serialize this one object
-  //and everthing should work realy nice on the gpu
-  void* dev_Memory = serialize_scene_alloc();
 
   curandGenerator_t sobol_generator;
   curand_check(curandCreateGenerator(&sobol_generator, CURAND_RNG_PSEUDO_DEFAULT));
@@ -192,7 +187,6 @@ void PhongRenderer<Accelerator>::Render(){
 
 	render_pixel_phong<Accelerator><<<grid, block>>>(this->host_scene,
 							 this->host_accel,
-							 dev_Memory,
 							 16 * rbx * j,
 							 16 * rby * i,
 							 image_size_x,

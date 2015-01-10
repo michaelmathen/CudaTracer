@@ -5,14 +5,58 @@
 #define MM_MATERIAL
 
 namespace mm_ray {
-  class Material {
+
+enum MaterialType {
+  PHONG_MAT
+};
+  
+
+  class Material : public Managed {
+    const MaterialType material_type;
   public:
+
+    __host__ __device__ inline Material(MaterialType mat_type);
     
-    __host__ __device__ virtual bool isLight() {
+    __host__ __device__  inline bool isLight() const;
+
+
+  };
+
+  class PhongMaterial : public Material {
+  public:
+    Vec3 color;
+    Real_t spec_light;
+    Real_t diff_light;
+    Real_t amb_light;
+    Real_t shine;
+    
+    __host__ __device__ PhongMaterial() : Material(PHONG_MAT) {}
+    
+    PhongMaterial(Vec3& color,
+		  Real_t spec_light, Real_t diff_light,
+		  Real_t amb_light, Real_t shine) : Material(PHONG_MAT),
+						    color(color),
+						    spec_light(spec_light),
+						    diff_light(diff_light),
+						    amb_light(amb_light),
+						    shine(shine)
+    {}
+
+    __host__ __device__  bool isLight() const {
       return false;
     }
 
-    static const Virtual_Type_Val type_id = MATERIAL;
   };
+
+  
+  inline Material::Material(MaterialType mat) :
+    material_type(mat)
+  {}
+    
+  __host__ __device__ inline bool Material::isLight() const {
+      return false;
+    }
+
+  
 }
 #endif

@@ -10,11 +10,8 @@
 #include "ray_defs.hpp"
 #include "ParseScene.hpp"
 #include "SceneContainer.hpp"
-#include "SceneObjects.hpp"
 #include "ParsingException.hpp"
 #include "DistanceRenderer.hpp"
-#include "SceneAllocator.hpp"
-#include "PhongMaterial.hpp"
 #include "PhongRenderer.hpp"
 
 
@@ -53,7 +50,6 @@ void writePPM(int dimx, int dimy, const char* file_name, Real_t* image_data){
 
 int main(int argc, char* argv[]){
 
-  initialize_scene_alloc();
   
   if (argc < 2){
     cout << "Need an input file" << endl;
@@ -62,12 +58,13 @@ int main(int argc, char* argv[]){
 
   Scene host_scene;
 
-  SceneContainer cont;
-  shared_ptr<Renderer<SceneContainer>> renderer;
-
+  Renderer<SceneContainer>* renderer;
+  shared_ptr<SceneContainer> cont(new SceneContainer());
+  SceneContainerHost hcontainer;
+  
   string fname(argv[1]);
   try {
-    parse_file<SceneContainer>(fname, host_scene, cont, renderer);
+    parse_file(fname, host_scene, cont, &renderer, hcontainer);
     cout << "Finished parsing file" << endl;
   } catch (ParsingException* e) {
     cout << "ParsingException" << endl;
@@ -79,10 +76,7 @@ int main(int argc, char* argv[]){
     return 1;
   }
   
-  cont.initialize();
-  
-  //PhongRenderer<SceneContainer> render(host_scene, cont);
-  //DistanceRenderer<SceneContainer> render(host_scene, cont);
+  cont->initialize();
   renderer->Render();
   vector<Real_t> image = renderer->getImage();
   cout << "Writing rendered image" << endl;

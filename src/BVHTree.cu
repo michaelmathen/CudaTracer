@@ -71,7 +71,7 @@ namespace mm_ray {
   }
 
     
-  void BVHTreeInit::insertGeometry(vector<s_ptr<Geometry> > geom){
+  void BVHTreeInit::insertGeometry(vector<Geometry*> > geom){
     geometry.insert(geometry.end(), geom.begin(), geom.end());
   }
 
@@ -85,10 +85,7 @@ namespace mm_ray {
     centroids.reserve(geometry.size());
 
     //Move all of the scene data over
-    s_ptr<Geometry> device_geometry = scene_alloc<Geometry>(geometry.size());
     
-    for (unsigned i = 0; i < geometry.size(); i++)
-      device_geometry[i] = geometry[i];
 
     serialize_scene_alloc();
     

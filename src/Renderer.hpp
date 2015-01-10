@@ -1,6 +1,6 @@
 #include <vector>
 #include "ray_defs.hpp"
-#include "SceneObjects.hpp"
+#include "Scene.hpp"
 #include "SceneContainer.hpp"
 
 /*
@@ -17,15 +17,15 @@ namespace mm_ray {
     
   protected:
     Scene host_scene;
-    Accelerator host_accel;
+    Accelerator const* host_accel;
     
-    vector<Real_t> output_buffer;
+    std::vector<Real_t> output_buffer;
     
   public:
     
-    Renderer(Scene const& scn, Accelerator const& acc);
+    Renderer(Scene const& scn, Accelerator const* acc);
     ~Renderer();
-    virtual vector<Real_t> getImage();
+    virtual std::vector<Real_t> getImage();
     
     virtual void Render() = 0;
     
