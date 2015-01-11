@@ -17,7 +17,7 @@ namespace mm_ray {
   protected:
   public:
 
-    PhongRenderer(Scene const& scn, Accel const& acc);
+    PhongRenderer(Scene const* scn, Accel const* acc);
     
     virtual void Render();
 
@@ -26,8 +26,8 @@ namespace mm_ray {
   template<typename Accel>
   struct PhongBuilder : public RendererBuilder<Accel> {
     virtual Renderer<Accel>* operator()(rapidjson::Value&, 
-					Scene const&,
-					Accel const&,
+					Scene const*,
+					Accel const*,
 					std::vector<Geometry*>&) const;
   };
 

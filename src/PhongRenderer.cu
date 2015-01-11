@@ -17,8 +17,8 @@ namespace mm_ray {
   
 template<typename Accel>
 __global__
-void render_pixel_phong(Scene const& scene,
-			Accel const& objects,
+void render_pixel_phong(Scene const* scene,
+			Accel const* objects,
 			int scene_lower_x,
 			int scene_lower_y,
 			int scene_width,
@@ -50,20 +50,20 @@ void render_pixel_phong(Scene const& scene,
   int pix_ix = (py_image * scene_width + px_image) * 3;
 
   //Normalized into the viewport 
-  Real_t norm_i = (((px_image + rand_x) / (Real_t)scene.output[0]) - .5) * scene.viewport[0];
-  Real_t norm_j = (((py_image + rand_y) / (Real_t)scene.output[1]) - .5) * scene.viewport[1];
+  Real_t norm_i = (((px_image + rand_x) / (Real_t)scene->output[0]) - .5) * scene->viewport[0];
+  Real_t norm_j = (((py_image + rand_y) / (Real_t)scene->output[1]) - .5) * scene->viewport[1];
 
-  Vec3 direc = norm_i * scene.cam_right + norm_j * scene.cam_up + scene.cam_dir;
+  Vec3 direc = norm_i * scene->cam_right + norm_j * scene->cam_up + scene->cam_dir;
 
   //Normalize ray
   direc = direc / mag(direc);
 
-  Ray ray(direc, scene.cam_loc);
+  Ray ray(direc, scene->cam_loc);
 
   //Run our ray tracing algorithm
 
   Hit prop;
-  objects.intersect(ray, prop);
+  objects->intersect(ray, prop);
 
   if (prop.distance < INFINITY) {
     PhongMaterial const* pmat = static_cast<PhongMaterial const*>(prop.material);
@@ -72,9 +72,9 @@ void render_pixel_phong(Scene const& scene,
     Vec3 pixel_color = pmat->color * pmat->amb_light;
     //printf("prop.distance = %f\n", pmat->color[1]);
     
-    for (int i = 0; i < objects.getLightNumber(); i++){
+    for (int i = 0; i < objects->getLightNumber(); i++){
       //We only support point lights so this will not be accurate for area lights
-      Geometry const* light_source = objects.getLight(i);
+      Geometry const* light_source = objects->getLight(i);
       
       //Get a ray going from our center to the light source
       Vec3 ctmp = light_source->getCenter();
@@ -91,7 +91,7 @@ void render_pixel_phong(Scene const& scene,
       Vec3 new_ray_origin = prop.hit_location + prop.normal * 1e-6f;
 
       Ray shadow_ray(new_ray, new_ray_origin);
-      objects.intersect(shadow_ray, shadow_prop);
+      objects->intersect(shadow_ray, shadow_prop);
      
       Real_t diff = pmat->diff_light;
       Real_t spec = pmat->spec_light;
@@ -124,7 +124,7 @@ void average_samples(Real_t* pixel_mem, int samples) {
 
   
 template<typename Accel>
-PhongRenderer<Accel>::PhongRenderer(Scene const& scene, Accel const& accel) 
+PhongRenderer<Accel>::PhongRenderer(Scene const* scene, Accel const* accel) 
   : Renderer<Accel>(scene, accel) {}
 
 template<typename Accel>
@@ -132,15 +132,15 @@ void PhongRenderer<Accel>::Render(){
 
   int image_size_x;
   int image_size_y;
-  if (this->host_scene.output[0] % 16 == 0)
-    image_size_x = this->host_scene.output[0];
+  if (this->host_scene->output[0] % 16 == 0)
+    image_size_x = this->host_scene->output[0];
   else
-    image_size_x = (this->host_scene.output[0] / 16 + 1) * 16;
+    image_size_x = (this->host_scene->output[0] / 16 + 1) * 16;
 
-  if (this->host_scene.output[1] % 16 == 0)
-    image_size_y = this->host_scene.output[1];
+  if (this->host_scene->output[1] % 16 == 0)
+    image_size_y = this->host_scene->output[1];
   else
-    image_size_y = (this->host_scene.output[1] / 16 + 1) * 16;
+    image_size_y = (this->host_scene->output[1] / 16 + 1) * 16;
   
 
   Real_t* device_pixel_buffer;
@@ -149,8 +149,8 @@ void PhongRenderer<Accel>::Render(){
   curandGenerator_t sobol_generator;
   curand_check(curandCreateGenerator(&sobol_generator, CURAND_RNG_PSEUDO_DEFAULT));
 
-  int rbx = this->host_scene.render_block_x;
-  int rby = this->host_scene.render_block_y;
+  int rbx = this->host_scene->render_block_x;
+  int rby = this->host_scene->render_block_y;
 
   float* random_values;
   cudaMalloc(&random_values,
@@ -168,7 +168,8 @@ void PhongRenderer<Accel>::Render(){
   //A grid is a bunch of blocks in a chunk
   int chunk_x = image_size_x % rbx == 0 ?  image_size_x / (rbx * 16) : image_size_x / (rbx * 16) + 1;
   int chunk_y = image_size_y % rby == 0 ?  image_size_y / (rby * 16) : image_size_y / (rby * 16) + 1;
-
+  
+  int sample_num = this->host_scene->samples;
   for (int i = 0; i < chunk_y; i++){
     int tmp_y = min(image_size_y / 16, rby * (i + 1));
     int grid_y_size = tmp_y - rby * i;
@@ -178,7 +179,7 @@ void PhongRenderer<Accel>::Render(){
       int grid_x_size = tmp_x - rbx * j;
       dim3 grid(grid_x_size, grid_y_size);
       //printf("grid_x_size= %d grid_y_size %d\n", grid_x_size, grid_y_size);
-      for (int k = 0; k < this->host_scene.samples; k++){
+      for (int k = 0; k < sample_num; k++){
 	
 	curand_check(curandGenerateUniform(sobol_generator,
 					   random_values,
@@ -197,18 +198,11 @@ void PhongRenderer<Accel>::Render(){
     }
   }
   gpuErrchk(cudaThreadSynchronize());
-  average_samples<<<image_size_x * image_size_y * 3, 1>>>(device_pixel_buffer, this->host_scene.samples);
+  average_samples<<<image_size_x * image_size_y * 3, 1>>>(device_pixel_buffer, sample_num);
   gpuErrchk(cudaThreadSynchronize());
 
   curand_check(curandDestroyGenerator(sobol_generator));
-  cudaFree(random_values);
-  cudaError_t error = cudaGetLastError();
-  if(error != cudaSuccess)
-  {
-    // print the CUDA error message
-    printf("CUDA error: %s\n", cudaGetErrorString(error));
-  }
-
+  gpuErrchk(cudaFree(random_values));
   
   //Copy the entire buffer to a temporary buffer
   int buffer_size = image_size_x * image_size_y * 3;
@@ -220,11 +214,11 @@ void PhongRenderer<Accel>::Render(){
 	     cudaMemcpyDeviceToHost);
 
   
-  this->output_buffer.resize(this->host_scene.output[1] * this->host_scene.output[0] * 3);
+  this->output_buffer.resize(this->host_scene->output[1] * this->host_scene->output[0] * 3);
   
-  for (int i = 0; i < this->host_scene.output[1]; i++){
-    for (int j = 0; j < this->host_scene.output[0] * 3; j++){
-      this->output_buffer[i * this->host_scene.output[0] * 3 + j] = tmp_buffer[i * image_size_x * 3 + j];
+  for (int i = 0; i < this->host_scene->output[1]; i++){
+    for (int j = 0; j < this->host_scene->output[0] * 3; j++){
+      this->output_buffer[i * this->host_scene->output[0] * 3 + j] = tmp_buffer[i * image_size_x * 3 + j];
     }
   }
   
@@ -233,8 +227,8 @@ void PhongRenderer<Accel>::Render(){
 
   template <typename Accel>
   Renderer<Accel>* PhongBuilder<Accel>::operator()(rapidjson::Value& , 
-						   Scene const& scn,
-						   Accel const& accel,
+						   Scene const* scn,
+						   Accel const* accel,
 						   std::vector<Geometry*>& geom) const {
     return new PhongRenderer<Accel>(scn, accel);
   }

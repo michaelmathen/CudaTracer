@@ -3,7 +3,7 @@ CXX_FLAGS = -g -std=c++11
 NVCC_FLAGS =  -gencode=arch=compute_30,code=sm_30 \
               -gencode=arch=compute_32,code=sm_32  \
               -gencode=arch=compute_35,code=compute_35 \
-              -g 
+              -g -std=c++11
 LD_LIB_DIRS = -L/usr/local/cuda/lib64
 LD_FLAGS = -lcuda -lcudart -lcurand -lm
 LD_STATIC = 

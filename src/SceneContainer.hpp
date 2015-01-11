@@ -22,12 +22,9 @@ namespace mm_ray {
   public:
     
     SceneContainer(){}
-    
     ~SceneContainer();
     
-    void Insert_Geometry(std::vector<Geometry*>&);
-    
-    void initialize(){}
+    static SceneContainer* Build_Accelerator(std::vector<Geometry*>&);
     
     __host__ __device__ void intersect(Ray const& ray, Hit& prop) const {
       Hit tmp;

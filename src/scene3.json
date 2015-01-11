@@ -52,6 +52,6 @@
 	}
     ],
     "renderer":{
-	"type":"phong"
+	"type":"distance"
     }
 }

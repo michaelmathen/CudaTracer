@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <memory>
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
@@ -24,20 +24,32 @@ using namespace std;
 namespace mm_ray {
 
   template<typename Accel>
+  SceneParser<Accel>::~SceneParser(){
+    delete scene_data;
+    delete accelerator;
+    for (auto el : geometry_data)
+      delete el;
+    geometry_data.clear();
+    for (auto el : material_ptrs)
+      delete el;
+    material_ptrs.clear();
+  }
+
+  template<typename Accel>
   void SceneParser<Accel>::Register_Material(std::string const& type, 
-      boost::shared_ptr<MaterialBuilder> build){
-          material_builders[type] = build;
+					     shared_ptr<MaterialBuilder> build){
+    material_builders[type] = build;
   }
 
   template<typename Accel>
   void SceneParser<Accel>::Register_Geometry(std::string const& type, 
-				      boost::shared_ptr<GeometryBuilder> build){
+					     shared_ptr<GeometryBuilder> build){
     geometry_builders[type] = build;
   }
 
   template<typename Accel>
   void SceneParser<Accel>::Register_Renderer(std::string const& type, 
-				      boost::shared_ptr<RendererBuilder<Accel> > build){
+					     shared_ptr<RendererBuilder<Accel> > build){
     render_builders[type] = build;
   }
 
@@ -67,9 +79,9 @@ namespace mm_ray {
     int samples = parse_err.get<int>(root, "samples");
 
     auto& render_block = parse_err.get(root, "render_block");
-    scene_data = Scene(viewport, output[0], output[1], cam_loc, cam_dir, cam_up, samples);
-    scene_data.render_block_x = parse_err.get<int>(render_block, 0);
-    scene_data.render_block_y = parse_err.get<int>(render_block, 1);
+    scene_data = new Scene(viewport, output[0], output[1], cam_loc, cam_dir, cam_up, samples);
+    scene_data->render_block_x = parse_err.get<int>(render_block, 0);
+    scene_data->render_block_y = parse_err.get<int>(render_block, 1);
   }
 
   template<typename Accel>
@@ -135,7 +147,7 @@ namespace mm_ray {
       parse_err << "Unrecognized renderer type " << render_name << "\n";
       throw &parse_err;
     }
-    accelerator.Insert_Geometry(geometry_ptrs);
+    accelerator = Accel::Build_Accelerator(geometry_ptrs);
     renderer = it->second->operator()(renderer_tag, scene_data,
 				      accelerator, geometry_ptrs);
   }
@@ -153,7 +165,7 @@ namespace mm_ray {
 	throw &parse_err;
       }
       material_names.push_back(parse_err.get<string>(curr_matt, "name"));
-      material_ptrs.push_back(it->second->operator()(curr_matt, scene_data));
+      material_ptrs.push_back(it->second->operator()(curr_matt, *scene_data));
     }
   }
 
@@ -169,7 +181,7 @@ namespace mm_ray {
 	throw &parse_err;
       }
       it->second->operator()(geom_obj,
-			     scene_data, 
+			     *scene_data,
 			     material_ptrs, 
 			     material_names, 
 			     geometry_ptrs, 

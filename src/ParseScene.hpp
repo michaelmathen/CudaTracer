@@ -1,6 +1,7 @@
 #include <string>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+//#include <boost/shared_ptr.hpp>
 
 #include "Scene.hpp"
 #include "SceneContainer.hpp"
@@ -17,14 +18,14 @@ namespace mm_ray{
     //This allocates of the data allocated for geometry,
     //materials, and other managed objects
 
-    std::map<std::string, boost::shared_ptr<GeometryBuilder> > geometry_builders;
-    std::map<std::string, boost::shared_ptr<MaterialBuilder> > material_builders;
-    std::map<std::string, boost::shared_ptr<RendererBuilder<Accel> > > render_builders;
+    std::map<std::string, std::shared_ptr<GeometryBuilder> > geometry_builders;
+    std::map<std::string, std::shared_ptr<MaterialBuilder> > material_builders;
+    std::map<std::string, std::shared_ptr<RendererBuilder<Accel> > > render_builders;
 
-    Scene scene_data;
+    Scene* scene_data;
     
     std::string accel_name;
-    Accel accelerator;
+    Accel* accelerator;
 
     Renderer<Accel>* renderer;
 
@@ -56,23 +57,27 @@ namespace mm_ray{
     //objects data
 
     //Materials will be parsed after scene since they are used for geometry data
-    void Register_Material(std::string const&, boost::shared_ptr<MaterialBuilder>);
+    void Register_Material(std::string const&, std::shared_ptr<MaterialBuilder>);
 
     //Then we parse geometry data
-     void Register_Geometry(std::string const&, boost::shared_ptr<GeometryBuilder>);
+     void Register_Geometry(std::string const&, std::shared_ptr<GeometryBuilder>);
     
     //Register requirements takes care of making sure a phong material 
     //doesn't get used for path tracing or vice versa
-    void Register_Renderer(std::string const&, boost::shared_ptr<RendererBuilder<Accel> >);
+    void Register_Renderer(std::string const&, std::shared_ptr<RendererBuilder<Accel> >);
     void Parse(std::string& fname);
 
     Scene const& Get_Scene(){
-      return scene_data;
+      return *scene_data;
     }
-
+    
+    
     Renderer<Accel>& Get_Renderer(){
       return *renderer;
     }
+    
+    ~SceneParser();
+
   };
   
   Transform Parse_Transform(rapidjson::Value&);

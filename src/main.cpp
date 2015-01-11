@@ -6,6 +6,7 @@
 #include <thread>
 #include <algorithm>
 #include <vector>
+#include <memory>
 #include "ray_defs.hpp"
 #include "ParseScene.hpp"
 #include "SceneContainer.hpp"
@@ -14,7 +15,6 @@
 #include "PhongRenderer.hpp"
 
 using namespace std;
-using namespace boost;
 using namespace mm_ray;
 
 inline unsigned char pixel_map(Real_t val){
@@ -70,28 +70,28 @@ int main(int argc, char* argv[]){
   try {
     //Register the supported materials, geometries, and accelerators
     
-    auto tmp0 = boost::shared_ptr<PhongMaterialBuilder>(new PhongMaterialBuilder());
-    auto t0 = boost::dynamic_pointer_cast<MaterialBuilder, PhongMaterialBuilder>(tmp0);
+    auto tmp0 = shared_ptr<PhongMaterialBuilder>(new PhongMaterialBuilder());
+    auto t0 = static_pointer_cast<MaterialBuilder, PhongMaterialBuilder>(tmp0);
     scn_parser.Register_Material("phong", t0);
     
-    auto tmp1 = boost::shared_ptr<SphereBuilder>(new SphereBuilder());
-    auto t1 = boost::dynamic_pointer_cast<GeometryBuilder, SphereBuilder>(tmp1);
+    auto tmp1 = shared_ptr<SphereBuilder>(new SphereBuilder());
+    auto t1 = dynamic_pointer_cast<GeometryBuilder, SphereBuilder>(tmp1);
     scn_parser.Register_Geometry("sphere", t1);
 
-    auto tmp2 = boost::shared_ptr<PointBuilder>(new PointBuilder());
-    auto t2 = boost::dynamic_pointer_cast<GeometryBuilder, PointBuilder>(tmp2);
+    auto tmp2 = shared_ptr<PointBuilder>(new PointBuilder());
+    auto t2 = dynamic_pointer_cast<GeometryBuilder, PointBuilder>(tmp2);
     scn_parser.Register_Geometry("point_light", t2);
 
-    auto tmp3 = boost::shared_ptr<TriangleMeshBuilder>(new TriangleMeshBuilder());
-    auto t3 = boost::dynamic_pointer_cast<GeometryBuilder, TriangleMeshBuilder>(tmp3);
+    auto tmp3 = shared_ptr<TriangleMeshBuilder>(new TriangleMeshBuilder());
+    auto t3 = dynamic_pointer_cast<GeometryBuilder, TriangleMeshBuilder>(tmp3);
     scn_parser.Register_Geometry("mesh", t3);
 
-    auto tmp4 = boost::shared_ptr<DistanceBuilder<Accel> >(new DistanceBuilder<Accel>());
-    auto t4 = boost::dynamic_pointer_cast<RendererBuilder<Accel>, DistanceBuilder<Accel>>(tmp4);
+    auto tmp4 = shared_ptr<DistanceBuilder<Accel> >(new DistanceBuilder<Accel>());
+    auto t4 = dynamic_pointer_cast<RendererBuilder<Accel>, DistanceBuilder<Accel>>(tmp4);
     scn_parser.Register_Renderer("distance", t4);
 
-    auto tmp5 = boost::shared_ptr<PhongBuilder<Accel> >(new PhongBuilder<Accel>());
-    auto t5 = boost::dynamic_pointer_cast<RendererBuilder<Accel>, PhongBuilder<Accel>>(tmp5);
+    auto tmp5 = shared_ptr<PhongBuilder<Accel> >(new PhongBuilder<Accel>());
+    auto t5 = dynamic_pointer_cast<RendererBuilder<Accel>, PhongBuilder<Accel>>(tmp5);
     scn_parser.Register_Renderer("phong", t5);
     
     //Now that all supported functionality is registered we can parse the file

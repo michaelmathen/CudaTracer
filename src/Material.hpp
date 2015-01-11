@@ -63,7 +63,7 @@ namespace mm_ray {
     virtual Material* operator()(rapidjson::Value&, Scene const& scene_data) = 0;
   };
 
-  struct PhongMaterialBuilder {
+  struct PhongMaterialBuilder : MaterialBuilder {
     virtual Material* operator()(rapidjson::Value&, Scene const&);
   };
   

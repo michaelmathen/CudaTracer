@@ -14,7 +14,7 @@ namespace mm_ray {
   class DistanceRenderer : public Renderer<Accel> {
   public:
 
-    DistanceRenderer(Scene const& scn, Accel const& acc) :
+    DistanceRenderer(Scene const* scn, Accel const* acc) :
       Renderer<Accel>(scn, acc) 
     {}
     
@@ -24,8 +24,8 @@ namespace mm_ray {
   template<typename Accel>
   struct DistanceBuilder : public RendererBuilder<Accel> {
     virtual Renderer<Accel>* operator()(rapidjson::Value&, 
-					Scene const&,
-					Accel const&,
+					Scene const*,
+					Accel const*,
 					std::vector<Geometry*>&) const;
   };
   

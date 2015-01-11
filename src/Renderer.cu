@@ -5,14 +5,10 @@ namespace mm_ray {
   using namespace std;
   
   template<typename Accelerator>
-  Renderer<Accelerator>::Renderer(Scene const& scn, Accelerator const& acc) :
+  Renderer<Accelerator>::Renderer(Scene const* scn, Accelerator const* acc) :
     host_scene(scn),
     host_accel(acc) {
-    output_buffer.resize(host_scene.output[0] * host_scene.output[1] * 3);
-  }
-  
-  template<typename Accelerator>
-  Renderer<Accelerator>::~Renderer(){
+    output_buffer.resize(host_scene->output[0] * host_scene->output[1] * 3);
   }
   
   template<typename Accelerator>

@@ -34,6 +34,6 @@ namespace mm_ray {
   }
  
   void Cuda_Free(void* mem){ 
-    gpuErrchk(cudaFree(mem));
+     gpuErrchk(cudaFree(mem));
   }
 }

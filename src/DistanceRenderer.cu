@@ -15,8 +15,8 @@ namespace mm_ray {
 
   template<typename Accel>
   __global__
-  void render_pixel(Scene const& scene,
-		    Accel const& objects,
+  void render_pixel(Scene const* scene,
+		    Accel const* objects,
 		    int scene_x,
 		    int scene_y,
 		    Real_t* pixel_out){
@@ -26,22 +26,22 @@ namespace mm_ray {
     */
     int px = threadIdx.x + blockDim.x * blockIdx.x;
     int py = threadIdx.y + blockDim.y * blockIdx.y;
-  
-    Real_t norm_i = ((px / (Real_t)scene.output[0]) - .5) * scene.viewport[0];
-    Real_t norm_j = ((py / (Real_t)scene.output[1]) - .5) * scene.viewport[1];
-  
+
+    Real_t norm_i = ((px / (Real_t)scene->output[0]) - .5) * scene->viewport[0];
+    Real_t norm_j = ((py / (Real_t)scene->output[1]) - .5) * scene->viewport[1];
     Vec3 direc;
-    direc = norm_i * scene.cam_right + norm_j * scene.cam_up + scene.cam_dir;
+    direc = norm_i * scene->cam_right + norm_j * scene->cam_up + scene->cam_dir;
 
     //Normalize ray
     direc = direc / mag(direc);
 
-    Ray ray(direc, scene.cam_loc);
+    Ray ray(direc, scene->cam_loc);
 
     //Run our ray tracing algorithm
 
     Hit prop;
-    objects.intersect(ray, prop);
+
+    objects->intersect(ray, prop);
 
     int pix_ix = (py * scene_x + px) * 3;
 
@@ -50,15 +50,14 @@ namespace mm_ray {
     pixel_out[pix_ix] = distance;
     pixel_out[pix_ix + 1] = distance;
     pixel_out[pix_ix + 2] = distance;
-
   }
 
 
   template<typename Accelerator>
   void DistanceRenderer<Accelerator>::Render(){
   
-    int image_size_x = this->host_scene.output[0];
-    int image_size_y = this->host_scene.output[1];
+    int image_size_x = this->host_scene->output[0];
+    int image_size_y = this->host_scene->output[1];
 
 
     //A block is a 16 x 16 chunk
@@ -79,11 +78,10 @@ namespace mm_ray {
     cudaThreadSynchronize();
 
     cudaError_t error = cudaGetLastError();
-    if(error != cudaSuccess)
-      {
-	// print the CUDA error message
+    if(error != cudaSuccess){
 	printf("CUDA error: %s\n", cudaGetErrorString(error));
-      }
+	exit(1);
+    }
 
   
     //Copy the entire buffer to a temporary buffer
@@ -96,11 +94,11 @@ namespace mm_ray {
 	       cudaMemcpyDeviceToHost);
 
   
-    this->output_buffer.resize(this->host_scene.output[1] * this->host_scene.output[0] * 3);
+    this->output_buffer.resize(this->host_scene->output[1] * this->host_scene->output[0] * 3);
   
-    for (int i = 0; i < this->host_scene.output[1]; i++){
-      for (int j = 0; j < this->host_scene.output[0] * 3; j++){
-	this->output_buffer[i * this->host_scene.output[0] * 3 + j] = tmp_buffer[i * image_size_x * 3 + j];
+    for (int i = 0; i < this->host_scene->output[1]; i++){
+      for (int j = 0; j < this->host_scene->output[0] * 3; j++){
+	this->output_buffer[i * this->host_scene->output[0] * 3 + j] = tmp_buffer[i * image_size_x * 3 + j];
       }
     }
   
@@ -111,8 +109,8 @@ namespace mm_ray {
   template<typename Accel>
   Renderer<Accel>*
   DistanceBuilder<Accel>::operator()(rapidjson::Value& val_obj, 
-				     Scene const& scn,
-				     Accel const& accelerator,
+				     Scene const* scn,
+				     Accel const* accelerator,
 				     std::vector<Geometry*>& geometry) const {
     return new DistanceRenderer<Accel>(scn, accelerator);
   }
