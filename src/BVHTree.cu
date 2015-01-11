@@ -1,8 +1,9 @@
 #include <algorithm>
 #include <thrust/device_vector.h>
+
 #include "ray_defs.hpp"
 #include "SpaceCurve.hpp"
-
+#include "managed.hpp"
 
 namespace mm_ray {
   using namespace std;
@@ -21,7 +22,7 @@ namespace mm_ray {
     }
     
     __host__ __device__
-    unsigned long operator() (Geometry* geom){
+    unsigned long operator() (Geometry const* geom){
 
       Vec3 centroid = geom->getCenter();
     
@@ -46,7 +47,7 @@ namespace mm_ray {
     }
     
     __host__ __device__
-    unsigned long operator() (Geometry* geom){
+    unsigned long operator() (Geometry const* geom){
     
       Vec3 centroid = geom->getCenter();
       
@@ -63,65 +64,44 @@ namespace mm_ray {
   };
 
 
-  struct getCentroids {
-    Vec3 operator()(Geometry* geom){
-      return geom->getCenter();
-    }
+  BVHTree* BVHTree::Build_Accelerator(vector<Geometry*>& geom){
+     thrust::device_vector<Geometry*> geometry_objects(geom.begin(), geom.end());
+
+     
+     Vec3 min_el_initial = (Real_t)INFINITY;
+     Vec3 max_el_initial = (Real_t)-INFINITY;
+
+     auto Get_Center = [](Geometry* geom) {
+       return geom.getCenter();
+     };
+
+     thrust::device_vector<Vec3> centroids;
+     transform(centroids.begin(), geometry.begin(), geometry.end(), Get_Center);
+
+     Vec3 lower = thrust::reduce(centroids.begin(),
+				 centroids.end(),
+				 min_el_initial,
+				 min);
+     
+     Vec3 upper = thrust::reduce(centroids.begin(),
+				 centroids.end(),
+				 max_el_initial,
+				 max);
+     centroids.clear();
+
+     thrust::device_vector<unsigned long> dist_space_curve;     
+     thrust::transform(dist_space_curve.begin(), dist_space_curve.end(), 
+		       geom.begin(), geom.end(), 
+		       centroids_To_1D_Hilbert(upper, lower));
+     thrust::sort_by_key(dist_space_curve.begin(), 
+			 dist_space_curve.end(),
+			 geom.begin());
+
+     dist_space_curve.clear();
+     
+     Geometry** geometry_data = thrust::raw_pointer_cast(&geom.begin());
+     
+     
   }
 
-    
-  void BVHTreeInit::insertGeometry(vector<Geometry*>& geom){
-    geometry.insert(geometry.end(), geom.begin(), geom.end());
-  }
-
-  void BVHTreeInit::initialize(){
-    /*
-      This builds the bvh tree using the LBVH construction method.
-     */
-
-    //Get the centroids from all of the geometry
-    thrust::device_vector<Vec3> centroids;
-    centroids.reserve(geometry.size());
-
-    //Move all of the scene data over
-    
-
-    serialize_scene_alloc();
-    
-    getCentroids gcf;
-    transform(centroids.begin(), geometry.begin(), geometry.end(), gcf);
-
-    //Find a bounding box 
-    Vec3 lower = thrust::reduce(centroids.begin(),
-				centroids.end(),
-				thrust::min_element<Vec3>());
-
-    Vec3 upper = thrust::reduce(centroids.begin(),
-				centroids.end(),
-				thrust::max_element<Vec3>());
-		   
-    
-    thrust::device_vector<unsigned long> length_into_curve;
-
-
-#ifdef Z_ORDER
-    int scale = 
-    thrust::transform(length_into_curve.begin(),
-		      length_into_curve.end(),
-		      centriods.begin(),
-		      centroids.end(),
-		      centroids_To_1D_Z_Order(upper, lower));
-#else
-    int scale = 4194304;
-    //For the scale we are going to use the finest space filling curve
-    thrust::transform(length_into_curve.begin(),
-		      length_into_curve.end(),
-		      centriods.begin(),
-		      centroids.end(),
-		      centroids_To_1D_Hilbert(upper, lower));
-#endif
-    //Now we can sort the entire array
-    thrust::sort(length_into_curve.begin(), length_into_curve.end());
-    
-  }
 }
