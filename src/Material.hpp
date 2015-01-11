@@ -1,16 +1,16 @@
+#include "rapidjson/document.h"
 #include "ray_defs.hpp"
-
+#include <memory>
 
 #ifndef MM_MATERIAL
 #define MM_MATERIAL
 
 namespace mm_ray {
 
-enum MaterialType {
-  PHONG_MAT
-};
-  
-
+  enum MaterialType {
+    PHONG_MAT
+  };
+    
   class Material : public Managed {
     const MaterialType material_type;
   public:
@@ -56,7 +56,16 @@ enum MaterialType {
   __host__ __device__ inline bool Material::isLight() const {
       return false;
     }
+  
+  class Scene; 
 
+  struct MaterialBuilder {
+    virtual Material* operator()(rapidjson::Value&, Scene const& scene_data) = 0;
+  };
+
+  struct PhongMaterialBuilder {
+    virtual Material* operator()(rapidjson::Value&, Scene const&);
+  };
   
 }
 #endif

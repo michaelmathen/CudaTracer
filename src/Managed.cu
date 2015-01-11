@@ -2,7 +2,9 @@
 
 namespace mm_ray {
   using namespace std;
-
+  
+  
+  
   void* Managed::operator new(std::size_t count) throw(std::bad_alloc){
     void* dev_ptr;
     gpuErrchk(cudaMallocManaged((void**)&dev_ptr, count, cudaMemAttachGlobal));

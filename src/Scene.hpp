@@ -1,10 +1,12 @@
 #include <cstring>
 #include <iostream>
 
+#include "Managed.hpp"
+
 #ifndef MM_SCENE
 #define MM_SCENE
-
-class Scene {
+namespace mm_ray {
+class Scene : public Managed {
 public:
   Vec3 cam_loc;
   Vec3 cam_dir;
@@ -57,4 +59,5 @@ public:
   
 };
 
+}
 #endif

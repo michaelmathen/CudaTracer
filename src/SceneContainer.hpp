@@ -9,6 +9,7 @@
 #define MM_SCENE_CONTAINER
 namespace mm_ray {
 
+  
   class SceneContainer : public Managed {
   
     Geometry** geometry_buffer;
@@ -49,6 +50,5 @@ namespace mm_ray {
     }
   };
 
-  typedef std::vector<std::auto_ptr<Managed> > SceneContainerHost;
 }
 #endif

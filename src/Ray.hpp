@@ -13,7 +13,8 @@ public:
   Vec3 direc;
   Vec3 origin;
 
-  __host__ __device__ Ray(Vec3& direc, Vec3& origin) : direc(direc), origin(origin){
+  __host__ __device__ Ray(Vec3 const& direc, Vec3 const& origin) 
+    : direc(direc), origin(origin){
     ray_t = RAYBASE;
   }
 

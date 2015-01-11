@@ -24,16 +24,16 @@ namespace mm_ray {
   }
 
   
-  vector<Geometry*> refine(TriangleMesh* trMesh){
+  vector<Geometry*> TriangleMesh::refine(){
     /*
       Break the triangle mesh into sub triangles.
     */
     vector<Geometry*> triangle_arr;
-    triangle_arr.resize(trMesh->number_of_triangles);
-    cout << trMesh->number_of_triangles << "number of triangles" << endl;
+    triangle_arr.resize(this->number_of_triangles);
+    cout << this->number_of_triangles << "number of triangles" << endl;
 
-    for (unsigned int i = 0; i < trMesh->number_of_triangles; i++){
-      triangle_arr[i] = new Triangle(trMesh, i);
+    for (unsigned int i = 0; i < this->number_of_triangles; i++){
+      triangle_arr[i] = new Triangle(this, i);
     }
     return triangle_arr;
   }

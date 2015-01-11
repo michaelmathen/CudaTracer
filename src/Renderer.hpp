@@ -11,24 +11,34 @@
 
 #ifndef MM_RENDERER
 #define MM_RENDERER
+
 namespace mm_ray {
-  template<typename Accelerator>
+  template <typename Accel>
   class Renderer {
     
   protected:
     Scene host_scene;
-    Accelerator const* host_accel;
-    
+    Accel host_accel;
     std::vector<Real_t> output_buffer;
     
   public:
     
-    Renderer(Scene const& scn, Accelerator const* acc);
+    Renderer(Scene const& scn, Accel const& accel);
     ~Renderer();
+
     virtual std::vector<Real_t> getImage();
-    
     virtual void Render() = 0;
     
+  };
+  
+  class Geometry;
+  
+  template<typename Accel>
+  struct RendererBuilder {
+    virtual Renderer<Accel>* operator()(rapidjson::Value&, 
+					Scene const&,
+					Accel const&,
+					std::vector<Geometry*>&) const =0;
   };
 }
 #endif

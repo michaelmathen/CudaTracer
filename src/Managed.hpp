@@ -1,5 +1,6 @@
 #include <new>
 #include <cstdio>
+
 #ifndef MM_MANAGED
 #define MM_MANAGED
 namespace mm_ray {
@@ -66,6 +67,10 @@ void check_curand(curandStatus_t err, const char* file, int line){
 }
 #endif
 
+  /*
+    Everything that is an object to be used on the gpu must inherit from
+    managed. Primitive arrays should be allocated with Cuda_Malloc
+   */
   class Managed {
   public:
     void* operator new(std::size_t count) throw(std::bad_alloc);

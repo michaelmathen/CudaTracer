@@ -29,6 +29,8 @@ CXX_FILES= main.cpp \
            ParseScene.cpp \
            ParsingException.cpp \
            SceneContainer.cpp \
+           GeometryBuilder.cpp \
+           MaterialBuilder.cpp \
            TriangleMesh.cpp
 
 CXX_OBJS = $(CXX_FILES:%.cpp=%.o)

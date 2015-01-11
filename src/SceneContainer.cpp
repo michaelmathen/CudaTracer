@@ -1,6 +1,13 @@
-#include "ray_defs.hpp"
 #include <algorithm>
 
+#include "rapidjson/document.h"
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/error/error.h"
+#include "rapidjson/error/en.h"
+
+#include "ParsingException.hpp"
+#include "Transform.hpp"
+#include "ray_defs.hpp"
 #include "SceneContainer.hpp"
 
 namespace mm_ray {
@@ -37,14 +44,6 @@ namespace mm_ray {
     }
     this->light_length = number_of_lights;
   }
-
-  /*
-  void SceneContainer::Insert_Material(vector<Material*>& materials){
-    this->materials = (Material**)Cuda_Malloc(materials.size() * sizeof(Material*));
-    copy(materials.begin(), materials.end(), this->materials);
-    material_length = materials.size();
-  }
-  */
 }
 
 

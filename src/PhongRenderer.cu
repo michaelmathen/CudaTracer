@@ -17,8 +17,8 @@ namespace mm_ray {
   
 template<typename Accel>
 __global__
-void render_pixel_phong(Scene scene,
-			Accel const* objects,
+void render_pixel_phong(Scene const& scene,
+			Accel const& objects,
 			int scene_lower_x,
 			int scene_lower_y,
 			int scene_width,
@@ -63,8 +63,7 @@ void render_pixel_phong(Scene scene,
   //Run our ray tracing algorithm
 
   Hit prop;
-  objects->intersect(ray, prop);
-
+  objects.intersect(ray, prop);
 
   if (prop.distance < INFINITY) {
     PhongMaterial const* pmat = static_cast<PhongMaterial const*>(prop.material);
@@ -73,9 +72,9 @@ void render_pixel_phong(Scene scene,
     Vec3 pixel_color = pmat->color * pmat->amb_light;
     //printf("prop.distance = %f\n", pmat->color[1]);
     
-    for (int i = 0; i < objects->getLightNumber(); i++){
+    for (int i = 0; i < objects.getLightNumber(); i++){
       //We only support point lights so this will not be accurate for area lights
-      Geometry const* light_source = objects->getLight(i);
+      Geometry const* light_source = objects.getLight(i);
       
       //Get a ray going from our center to the light source
       Vec3 ctmp = light_source->getCenter();
@@ -92,7 +91,7 @@ void render_pixel_phong(Scene scene,
       Vec3 new_ray_origin = prop.hit_location + prop.normal * 1e-6f;
 
       Ray shadow_ray(new_ray, new_ray_origin);
-      objects->intersect(shadow_ray, shadow_prop);
+      objects.intersect(shadow_ray, shadow_prop);
      
       Real_t diff = pmat->diff_light;
       Real_t spec = pmat->spec_light;
@@ -124,12 +123,12 @@ void average_samples(Real_t* pixel_mem, int samples) {
 
 
   
-template<typename Accelerator>
-PhongRenderer<Accelerator>::PhongRenderer(Scene const& scene, Accelerator const* accel) 
-  : Renderer<Accelerator>(scene, accel) {}
+template<typename Accel>
+PhongRenderer<Accel>::PhongRenderer(Scene const& scene, Accel const& accel) 
+  : Renderer<Accel>(scene, accel) {}
 
-template<typename Accelerator>
-void PhongRenderer<Accelerator>::Render(){
+template<typename Accel>
+void PhongRenderer<Accel>::Render(){
 
   int image_size_x;
   int image_size_y;
@@ -185,15 +184,15 @@ void PhongRenderer<Accelerator>::Render(){
 					   random_values,
 					   grid_x_size * grid_y_size * 16 * 16 * 2));
 
-	render_pixel_phong<Accelerator><<<grid, block>>>(this->host_scene,
-							 this->host_accel,
-							 16 * rbx * j,
-							 16 * rby * i,
-							 image_size_x,
-							 grid_x_size,
-							 device_pixel_buffer,
-							 random_values,
-							 i);
+	render_pixel_phong<Accel><<<grid, block>>>(this->host_scene,
+						   this->host_accel,
+						   16 * rbx * j,
+						   16 * rby * i,
+						   image_size_x,
+						   grid_x_size,
+						   device_pixel_buffer,
+						   random_values,
+						   i);
       }
     }
   }
@@ -232,11 +231,15 @@ void PhongRenderer<Accelerator>::Render(){
   cudaFree(device_pixel_buffer);
 }
 
-  template<typename Accelerator>
-  PhongRenderer<Accelerator>::~PhongRenderer(){
-    //Todo delete the memory associated with the device pointers
+  template <typename Accel>
+  Renderer<Accel>* PhongBuilder<Accel>::operator()(rapidjson::Value& , 
+						   Scene const& scn,
+						   Accel const& accel,
+						   std::vector<Geometry*>& geom) const {
+    return new PhongRenderer<Accel>(scn, accel);
   }
 
   template class PhongRenderer<SceneContainer>;
+  template class PhongBuilder<SceneContainer>;
 }
 

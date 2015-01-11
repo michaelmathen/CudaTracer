@@ -2,7 +2,6 @@
 #include <thrust/device_vector.h>
 #include "ray_defs.hpp"
 #include "SpaceCurve.hpp"
-#include "SceneAllocator.hpp"
 
 
 namespace mm_ray {
@@ -22,7 +21,7 @@ namespace mm_ray {
     }
     
     __host__ __device__
-    unsigned long operator() (s_ptr<Geometry> geom){
+    unsigned long operator() (Geometry* geom){
 
       Vec3 centroid = geom->getCenter();
     
@@ -47,7 +46,7 @@ namespace mm_ray {
     }
     
     __host__ __device__
-    unsigned long operator() (s_ptr<Geometry> geom){
+    unsigned long operator() (Geometry* geom){
     
       Vec3 centroid = geom->getCenter();
       
@@ -65,13 +64,13 @@ namespace mm_ray {
 
 
   struct getCentroids {
-    Vec3 operator()(Geometry const& geom){
-      return geom.getCenter();
+    Vec3 operator()(Geometry* geom){
+      return geom->getCenter();
     }
   }
 
     
-  void BVHTreeInit::insertGeometry(vector<Geometry*> > geom){
+  void BVHTreeInit::insertGeometry(vector<Geometry*>& geom){
     geometry.insert(geometry.end(), geom.begin(), geom.end());
   }
 

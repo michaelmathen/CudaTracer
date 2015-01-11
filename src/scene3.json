@@ -1,0 +1,57 @@
+{
+    "camera":{
+	"cam_loc":[-5.0, 0.0, 0.0],
+	"cam_dir":[1.0, 0.0, 0.0],
+	"cam_up":[0.0, 0.0, 1.0]
+    },
+    "viewport_size":[1.5, 1.5],
+    "output":[1000, 1000],
+    "render_block":[4, 4],
+    "samples":2,
+    "geometry":[
+	{
+	    "type":"point_light",
+	    "center":[-5.0, 2.0, 0.0],
+	    "illumination":[1.0, 1.0, 1.0]
+	},
+	{
+	    "type":"sphere",
+	    "center":[0.0, 0.0, 0.0],
+	    "radius":2.0,
+	    "material":"matte"
+	}
+    ],
+    "materials":[
+	{
+	    "name":"matte",
+	    "type":"phong",
+	    "specular":0.6,
+	    "diffuse":0.4,
+	    "ambient":0.0,
+	    "shine":5.0,
+	    "color":"BBBB00"
+	},
+	{
+	    "name":"matte_light",
+	    "type":"phong",
+	    "specular":0.0,
+	    "diffuse":0.9,
+	    "ambient":0.1,
+	    "shine":0.0,
+	    "color":"BB00FF"
+	},
+
+	{
+	    "name":"shiny",
+	    "type":"phong",
+	    "specular":0.3,
+	    "diffuse":0.6,
+	    "ambient":0.1,
+	    "shine":20.0,
+	    "color":"0000FF"
+	}
+    ],
+    "renderer":{
+	"type":"phong"
+    }
+}

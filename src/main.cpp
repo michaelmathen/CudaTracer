@@ -6,7 +6,6 @@
 #include <thread>
 #include <algorithm>
 #include <vector>
-#include <memory>
 #include "ray_defs.hpp"
 #include "ParseScene.hpp"
 #include "SceneContainer.hpp"
@@ -14,8 +13,8 @@
 #include "DistanceRenderer.hpp"
 #include "PhongRenderer.hpp"
 
-
 using namespace std;
+using namespace boost;
 using namespace mm_ray;
 
 inline unsigned char pixel_map(Real_t val){
@@ -56,15 +55,47 @@ int main(int argc, char* argv[]){
     return 1;
   }
 
-  Scene host_scene;
 
-  Renderer<SceneContainer>* renderer;
-  shared_ptr<SceneContainer> cont(new SceneContainer());
-  SceneContainerHost hcontainer;
   
+  
+  Scene host_scene;
+  
+  typedef SceneContainer Accel;
+  
+  //Contains all of the managed cuda data so that it can be deleted at the end
+  //Uses a vector of unique vectors so they should be freed when the vector goes out of 
+  //scope
+  SceneParser<SceneContainer> scn_parser;
   string fname(argv[1]);
   try {
-    parse_file(fname, host_scene, cont, &renderer, hcontainer);
+    //Register the supported materials, geometries, and accelerators
+    
+    auto tmp0 = boost::shared_ptr<PhongMaterialBuilder>(new PhongMaterialBuilder());
+    auto t0 = boost::dynamic_pointer_cast<MaterialBuilder, PhongMaterialBuilder>(tmp0);
+    scn_parser.Register_Material("phong", t0);
+    
+    auto tmp1 = boost::shared_ptr<SphereBuilder>(new SphereBuilder());
+    auto t1 = boost::dynamic_pointer_cast<GeometryBuilder, SphereBuilder>(tmp1);
+    scn_parser.Register_Geometry("sphere", t1);
+
+    auto tmp2 = boost::shared_ptr<PointBuilder>(new PointBuilder());
+    auto t2 = boost::dynamic_pointer_cast<GeometryBuilder, PointBuilder>(tmp2);
+    scn_parser.Register_Geometry("point_light", t2);
+
+    auto tmp3 = boost::shared_ptr<TriangleMeshBuilder>(new TriangleMeshBuilder());
+    auto t3 = boost::dynamic_pointer_cast<GeometryBuilder, TriangleMeshBuilder>(tmp3);
+    scn_parser.Register_Geometry("mesh", t3);
+
+    auto tmp4 = boost::shared_ptr<DistanceBuilder<Accel> >(new DistanceBuilder<Accel>());
+    auto t4 = boost::dynamic_pointer_cast<RendererBuilder<Accel>, DistanceBuilder<Accel>>(tmp4);
+    scn_parser.Register_Renderer("distance", t4);
+
+    auto tmp5 = boost::shared_ptr<PhongBuilder<Accel> >(new PhongBuilder<Accel>());
+    auto t5 = boost::dynamic_pointer_cast<RendererBuilder<Accel>, PhongBuilder<Accel>>(tmp5);
+    scn_parser.Register_Renderer("phong", t5);
+    
+    //Now that all supported functionality is registered we can parse the file
+    scn_parser.Parse(fname);
     cout << "Finished parsing file" << endl;
   } catch (ParsingException* e) {
     cout << "ParsingException" << endl;
@@ -75,29 +106,11 @@ int main(int argc, char* argv[]){
     cout << "Something really bad happened " << endl;
     return 1;
   }
-  
-  cont->initialize();
-  renderer->Render();
-  vector<Real_t> image = renderer->getImage();
+  auto& renderer = scn_parser.Get_Renderer();
+  renderer.Render();
+  vector<Real_t> image = renderer.getImage();
+  auto& scn = scn_parser.Get_Scene();
   cout << "Writing rendered image" << endl;
-  
-  writePPM(host_scene.output[1], host_scene.output[0], argv[2], &*image.begin());
-  //if (argc > 2){
-  //int code = writeImage(argv[2], host_scene.output[0], host_scene.output[1], &*imagef.begin());
-    /*switch(code){
-    case BMP_CREATE_ERROR:
-      cerr << "Failed to create output file" << endl;
-      break;
-    case BMP_SET_FAILED:
-      cerr << "Something is wrong with the data buffer" << endl;
-      break;
-    case BMP_SAVE_ERROR:
-      cerr << "Was not able to save the output file" << endl;
-      break;
-    case BMP_SUCCESS:
-      break;
-    };
-  }
-    */
+  writePPM(scn.output[1], scn.output[0], argv[2], &*image.begin());
   return 0;
 }
