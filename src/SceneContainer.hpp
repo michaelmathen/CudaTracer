@@ -26,11 +26,11 @@ namespace mm_ray {
     
     static SceneContainer* Build_Accelerator(std::vector<Geometry*>&);
     
-    __host__ __device__ void intersect(Ray const& ray, Hit& prop) const {
+    __host__ __device__ void Intersect(Ray const& ray, Hit& prop) const {
       Hit tmp;
       prop.distance = INFINITY;
       for (int i = 0; i < geom_length; i++){
-	geometry_buffer[i]->intersectRay(ray, tmp);
+	geometry_buffer[i]->Intersect_Ray(ray, tmp);
 	if (tmp.distance < prop.distance){
 	  prop = tmp;
 	}

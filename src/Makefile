@@ -18,8 +18,7 @@ NVCC = nvcc
 
 OUTPUT_DIR=./bin/
 
-CUDA_FILES = Renderer.cu \
-             DistanceRenderer.cu \
+CUDA_FILES = DistanceRenderer.cu \
              Managed.cu \
              PhongRenderer.cu          
 
@@ -29,9 +28,11 @@ CXX_FILES= main.cpp \
            ParseScene.cpp \
            ParsingException.cpp \
            SceneContainer.cpp \
+           BVHTreeSimple.cpp \
            GeometryBuilder.cpp \
            MaterialBuilder.cpp \
-           TriangleMesh.cpp
+           TriangleMesh.cpp  \
+           HostRenderer.cpp
 
 CXX_OBJS = $(CXX_FILES:%.cpp=%.o)
 

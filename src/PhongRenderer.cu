@@ -8,6 +8,7 @@
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "PhongRenderer.hpp"
+#include "BVHTreeSimple.hpp"
 #include "ray_defs.hpp"
 
 using namespace std;
@@ -63,7 +64,7 @@ void render_pixel_phong(Scene const* scene,
   //Run our ray tracing algorithm
 
   Hit prop;
-  objects->intersect(ray, prop);
+  objects->Intersect(ray, prop);
 
   if (prop.distance < INFINITY) {
     PhongMaterial const* pmat = static_cast<PhongMaterial const*>(prop.material);
@@ -91,7 +92,7 @@ void render_pixel_phong(Scene const* scene,
       Vec3 new_ray_origin = prop.hit_location + prop.normal * 1e-6f;
 
       Ray shadow_ray(new_ray, new_ray_origin);
-      objects->intersect(shadow_ray, shadow_prop);
+      objects->Intersect(shadow_ray, shadow_prop);
      
       Real_t diff = pmat->diff_light;
       Real_t spec = pmat->spec_light;
@@ -168,7 +169,7 @@ void PhongRenderer<Accel>::Render(){
   //A grid is a bunch of blocks in a chunk
   int chunk_x = image_size_x % rbx == 0 ?  image_size_x / (rbx * 16) : image_size_x / (rbx * 16) + 1;
   int chunk_y = image_size_y % rby == 0 ?  image_size_y / (rby * 16) : image_size_y / (rby * 16) + 1;
-  
+  cout << chunk_x << " " << chunk_y << endl;
   int sample_num = this->host_scene->samples;
   for (int i = 0; i < chunk_y; i++){
     int tmp_y = min(image_size_y / 16, rby * (i + 1));
@@ -184,7 +185,6 @@ void PhongRenderer<Accel>::Render(){
 	curand_check(curandGenerateUniform(sobol_generator,
 					   random_values,
 					   grid_x_size * grid_y_size * 16 * 16 * 2));
-
 	render_pixel_phong<Accel><<<grid, block>>>(this->host_scene,
 						   this->host_accel,
 						   16 * rbx * j,
@@ -225,15 +225,7 @@ void PhongRenderer<Accel>::Render(){
   cudaFree(device_pixel_buffer);
 }
 
-  template <typename Accel>
-  Renderer<Accel>* PhongBuilder<Accel>::operator()(rapidjson::Value& , 
-						   Scene const* scn,
-						   Accel const* accel,
-						   std::vector<Geometry*>& geom) const {
-    return new PhongRenderer<Accel>(scn, accel);
-  }
-
   template class PhongRenderer<SceneContainer>;
-  template class PhongBuilder<SceneContainer>;
+  template class PhongRenderer<BVHTreeSimple>;
 }
 

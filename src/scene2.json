@@ -5,9 +5,9 @@
 	"cam_up":[0.0, 0.0, 1.0]
     },
     "viewport_size":[1.5, 1.5],
-    "output":[1000, 1000],
-    "render_block":[4, 4],
-    "samples":2,
+    "output":[100, 100],
+    "render_block":[1, 1],
+    "samples":1,
     "geometry":[
 	{
 	    "type":"point_light",
@@ -64,6 +64,6 @@
 	}
     ],
     "renderer":{
-	"type":"phong"
+	"type":"host"
     }
 }

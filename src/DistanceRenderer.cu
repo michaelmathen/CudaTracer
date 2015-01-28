@@ -5,8 +5,9 @@
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "ray_defs.hpp"
-
+#include "BVHTreeSimple.hpp"
 #include "DistanceRenderer.hpp"
+
 
 using namespace std;
 
@@ -41,7 +42,7 @@ namespace mm_ray {
 
     Hit prop;
 
-    objects->intersect(ray, prop);
+    objects->Intersect(ray, prop);
 
     int pix_ix = (py * scene_x + px) * 3;
 
@@ -106,16 +107,7 @@ namespace mm_ray {
   }
 
 
-  template<typename Accel>
-  Renderer<Accel>*
-  DistanceBuilder<Accel>::operator()(rapidjson::Value& val_obj, 
-				     Scene const* scn,
-				     Accel const* accelerator,
-				     std::vector<Geometry*>& geometry) const {
-    return new DistanceRenderer<Accel>(scn, accelerator);
-  }
-
-  template class DistanceBuilder<SceneContainer>;
   template class DistanceRenderer<SceneContainer>;
+  template class DistanceRenderer<BVHTreeSimple>;
 }
 

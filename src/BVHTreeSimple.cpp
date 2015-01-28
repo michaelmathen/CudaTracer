@@ -36,6 +36,7 @@ namespace mm_ray {
     Vec3 r = (Real_t)2097152.0 / (u - l);
     typedef pair<unsigned long, Geometry const*> Geom_Pair;
     vector<Geom_Pair> ind_pair;
+
     ind_pair.resize(geom.size());
     transform(geom.begin(), geom.end(), ind_pair.begin(), 
 	      [&r, &l](Geometry const* geom){
@@ -62,7 +63,7 @@ namespace mm_ray {
     
     for (unsigned int j = 0; j < geom.size(); j++)
       curr_nodes.push_back(make_pair(1, ind_pair[j].second));
-    
+
     Vec3 u1, l1, u2, l2;      
     while (curr_nodes.size() != 1){
       auto n1 = curr_nodes.back();
@@ -78,7 +79,7 @@ namespace mm_ray {
       new_n->right = n2.second;
       curr_nodes.push_front(make_pair(max(n1.first, n2.first) + 1, new_n));
     }
-    
+
     int light_length = count_if(geom.begin(), geom.end(), 
 				[](Geometry const* val){
 				  return val->isLight();

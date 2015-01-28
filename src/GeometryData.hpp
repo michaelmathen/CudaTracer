@@ -1,6 +1,10 @@
 #include <vector>
 #include <string>
+
+#ifndef __CUDACC__
 #include "rapidjson/document.h"
+#endif
+
 #include "Transform.hpp"
 #include "ray_defs.hpp"
 #include "Scene.hpp"
@@ -41,7 +45,7 @@ namespace mm_ray {
   };
 
 
-  
+#ifndef __CUDACC__  
   
   struct GeometryBuilder {
     virtual void operator() (rapidjson::Value& sphere_obj,
@@ -81,6 +85,7 @@ namespace mm_ray {
 			    std::vector<Managed*>& geom_data);
   
   };
+#endif
 
 }
 

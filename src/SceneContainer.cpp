@@ -24,7 +24,7 @@ namespace mm_ray {
     scn_ptr->geometry_buffer = (Geometry**)Cuda_Malloc(geom.size() * sizeof(Geometry*));
     
     int number_of_lights = 0;
-    for (int i = 0; i < geom.size(); i++){
+    for (unsigned i = 0; i < geom.size(); i++){
       if (geom[i]->isLight())
 	number_of_lights++;
       

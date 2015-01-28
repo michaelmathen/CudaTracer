@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <vector>
-
+#ifndef __CUDACC__
+#include "rapidjson/document.h"
+#endif 
 #include "SceneContainer.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
@@ -23,13 +25,19 @@ namespace mm_ray {
 
   };
 
+#ifndef __CUDACC__
   template<typename Accel>
   struct PhongBuilder : public RendererBuilder<Accel> {
     virtual Renderer<Accel>* operator()(rapidjson::Value&, 
-					Scene const*,
-					Accel const*,
-					std::vector<Geometry*>&) const;
+					Scene const* scn,
+					Accel const* accel,
+					std::vector<Geometry*>&) const{
+      return new PhongRenderer<Accel>(scn, accel);
+    }
   };
-
+#endif 
 }
 #endif 
+
+
+

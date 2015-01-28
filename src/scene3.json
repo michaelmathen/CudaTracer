@@ -5,20 +5,44 @@
 	"cam_up":[0.0, 0.0, 1.0]
     },
     "viewport_size":[1.5, 1.5],
-    "output":[1000, 1000],
+    "output":[10, 10],
     "render_block":[4, 4],
     "samples":2,
     "geometry":[
-	{
-	    "type":"point_light",
-	    "center":[-5.0, 2.0, 0.0],
-	    "illumination":[1.0, 1.0, 1.0]
-	},
 	{
 	    "type":"sphere",
 	    "center":[0.0, 0.0, 0.0],
 	    "radius":2.0,
 	    "material":"matte"
+	},
+	{
+	    "type":"sphere",
+	    "center":[0.3, 0.0, 0.0],
+	    "radius":2.0,
+	    "material":"matte"
+	},
+	{
+	    "type":"sphere",
+	    "center":[0.0, 0.2, 0.0],
+	    "radius":2.0,
+	    "material":"matte"
+	},
+	{
+	    "type":"sphere",
+	    "center":[0.0, 0.0, 0.1],
+	    "radius":2.0,
+	    "material":"matte"
+	},
+	{
+	    "type":"sphere",
+	    "center":[0.0, -0.3, 0.0],
+	    "radius":2.0,
+	    "material":"matte"
+	},
+	{
+	    "type":"point_light",
+	    "center":[-5.0, 2.0, 0.0],
+	    "illumination":[1.0, 1.0, 1.0]
 	}
     ],
     "materials":[

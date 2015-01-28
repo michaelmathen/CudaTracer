@@ -15,6 +15,7 @@
 #include "DistanceRenderer.hpp"
 #include "SceneContainer.hpp"
 #include "ParsingException.hpp"
+#include "BVHTreeSimple.hpp"
 #include "Transform.hpp"
 #include "GeometryData.hpp"
 #include "ParseScene.hpp"
@@ -190,4 +191,5 @@ namespace mm_ray {
   }
 
   template class SceneParser<SceneContainer>;
+  template class SceneParser<BVHTreeSimple>;
 }

@@ -6,8 +6,8 @@
 
 
 template<unsigned bits>
-__host__ __device__ 
-unsigned long  Hilbert_Coord_To_Int_3D(unsigned x, unsigned y, unsigned z) {
+__host__ __device__ inline unsigned long  
+Hilbert_Coord_To_Int_3D(unsigned x, unsigned y, unsigned z) {
   /*
     This code maps a 3d Hilburt coordinate to a distance along the curve
    */
@@ -63,7 +63,8 @@ unsigned long  Hilbert_Coord_To_Int_3D(unsigned x, unsigned y, unsigned z) {
 /*
 This assumes that the numbers are scaled to fit inside a 2^16x2^16x2^16 sized block
  */
-__host__ __device__ unsigned long inline Z_Order_3D(unsigned long x, unsigned long y, unsigned long z){
+__host__ __device__ inline unsigned long
+Z_Order_3D(unsigned long x, unsigned long y, unsigned long z){
      static const unsigned long B[] = {0x00000000FF0000FF, 0x000000F00F00F00F,
 				       0x00000C30C30C30C3, 0X0000249249249249};           
      static const int S[] =  {16, 8, 4, 2}; 
