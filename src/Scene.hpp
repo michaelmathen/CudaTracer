@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 
+#include "ray_defs.hpp"
 #include "Managed.hpp"
 
 #ifndef MM_SCENE
