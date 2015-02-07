@@ -11,29 +11,20 @@
 #include "ray_defs.hpp"
 #include "Renderer.hpp"
 
+#ifndef MM_DISTANCE_RENDER
+#define MM_DISTANCE_RENDER
 namespace mm_ray {
 
-  template<typename Accel>
-  class DistanceRenderer : public Renderer<Accel> {
-  public:
-
-    DistanceRenderer(Scene const* scn, Accel const* acc) :
-      Renderer<Accel>(scn, acc) 
-    {}
-    
-    virtual void Render();
-  };
-
-#ifndef __CUDACC__  
-  template<typename Accel>
-  struct DistanceBuilder : public RendererBuilder<Accel> {
-    virtual Renderer<Accel>* operator()(rapidjson::Value& val_obj, 
-					Scene const* scn,
-					Accel const* accelerator,
-					std::vector<Geometry*>& geometry) const {
-      return new DistanceRenderer<Accel>(scn, accelerator);
+  struct DistanceRenderer{
+    template<typename Accel>
+    Vec3 operator()(Scene const& scene,
+		    Accel const& objects,
+		    Ray const& initial_ray){
+      Hit prop;
+      objects->Intersect(initial_ray, prop);
+      Vec3 distance = 1 / (1 + prop.distance);
+      return distance;
     }
   };
-#endif
-  
 }
+#endif

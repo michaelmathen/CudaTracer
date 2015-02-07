@@ -18,26 +18,16 @@ namespace mm_ray{
   
   class BVHTreeSimple : public Managed {
     const Geometry* bvh_entries;
-    const int bvh_depth;
+    int bvh_depth;
 
     const Geometry** lights;
     int light_length;
 
   public:
 
-    BVHTreeSimple(int bvh_d, 
-		  const Geometry* bvh_e, 
-		  int light_l, 
-		  const Geometry** l) :
-      bvh_entries(bvh_e),
-      bvh_depth(bvh_d),
-      lights(l),
-      light_length(light_l)
-    {}
+    BVHTreeSimple(std::vector<Geometry*>& geom);
     ~BVHTreeSimple();
       
-    static BVHTreeSimple* Build_Accelerator(std::vector<Geometry*>& geom);
-    
     __host__ __device__ inline int getLightNumber() const {
       return light_length;
     }

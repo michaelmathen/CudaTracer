@@ -21,10 +21,12 @@ namespace mm_ray {
     
   public:
     
-    SceneContainer(){}
+    #ifndef __CUDACC__
+    SceneContainer(std::vector<Geometry*>& geom);
+    #endif
+
     ~SceneContainer();
     
-    static SceneContainer* Build_Accelerator(std::vector<Geometry*>&);
     
     __host__ __device__ void Intersect(Ray const& ray, Hit& prop) const {
       Hit tmp;

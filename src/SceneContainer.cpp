@@ -18,30 +18,31 @@ namespace mm_ray {
     Cuda_Free(light_sources);
   }
 
-  SceneContainer* SceneContainer::Build_Accelerator(std::vector<Geometry*>& geom){
-    auto scn_ptr = new SceneContainer();
-    scn_ptr->geom_length = geom.size();
-    scn_ptr->geometry_buffer = (Geometry**)Cuda_Malloc(geom.size() * sizeof(Geometry*));
+#ifndef ___CUDACC__
+  SceneContainer::SceneContainer(std::vector<Geometry*>& geom){
+    geom_length = geom.size();
+    geometry_buffer = (Geometry**)Cuda_Malloc(geom.size() * sizeof(Geometry*));
     
     int number_of_lights = 0;
     for (unsigned i = 0; i < geom.size(); i++){
       if (geom[i]->isLight())
 	number_of_lights++;
       
-      scn_ptr->geometry_buffer[i] = geom[i];
+      geometry_buffer[i] = geom[i];
     }
 
     //Now copy all the lights into the light buffer
-    scn_ptr->light_sources = (Geometry**)Cuda_Malloc(sizeof(Geometry*) * number_of_lights);
+    light_sources = (Geometry**)Cuda_Malloc(sizeof(Geometry*) * number_of_lights);
     for (int i = 0, light_curr = 0; i < scn_ptr->geom_length; i++){
-      if (scn_ptr->geometry_buffer[i]->isLight()) {
-	scn_ptr->light_sources[light_curr] = scn_ptr->geometry_buffer[i];
+      if (geometry_buffer[i]->isLight()) {
+	light_sources[light_curr] = geometry_buffer[i];
 	light_curr++;
       }
     }
-    scn_ptr->light_length = number_of_lights;
+    light_length = number_of_lights;
     
   }
+#endif
 }
 
 

@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
   //Uses a vector of unique vectors so they should be freed when the vector goes out of 
   //scope
   //SceneParser<SceneContainer> scn_parser;
-  SceneParser<Accel> scn_parser;
+  SceneParser scn_parser;
   string fname(argv[1]);
   try {
     //Register the supported materials, geometries, and accelerators
@@ -86,17 +86,8 @@ int main(int argc, char* argv[]){
     auto tmp3 = shared_ptr<TriangleMeshBuilder>(new TriangleMeshBuilder());
     auto t3 = dynamic_pointer_cast<GeometryBuilder, TriangleMeshBuilder>(tmp3);
     scn_parser.Register_Geometry("mesh", t3);
-    auto tmp4 = shared_ptr<DistanceBuilder<Accel> >(new DistanceBuilder<Accel>());
-    auto t4 = dynamic_pointer_cast<RendererBuilder<Accel>, DistanceBuilder<Accel>>(tmp4);
-    scn_parser.Register_Renderer("distance", t4);
-    auto tmp5 = shared_ptr<PhongBuilder<Accel> >(new PhongBuilder<Accel>());
-    auto t5 = dynamic_pointer_cast<RendererBuilder<Accel>, PhongBuilder<Accel>>(tmp5);
-    scn_parser.Register_Renderer("phong", t5);
 
-    auto tmp6 = shared_ptr<HostBuilder<Accel> >(new HostBuilder<Accel>());
-    auto t6 = dynamic_pointer_cast<RendererBuilder<Accel>, HostBuilder<Accel>>(tmp6);
-    scn_parser.Register_Renderer("host", t6);
-
+    
     //Now that all supported functionality is registered we can parse the file
     scn_parser.Parse(fname);
     cout << "Finished parsing file" << endl;

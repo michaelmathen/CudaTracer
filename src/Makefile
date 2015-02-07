@@ -18,14 +18,12 @@ NVCC = nvcc
 
 OUTPUT_DIR=./bin/
 
-CUDA_FILES = DistanceRenderer.cu \
-             Managed.cu \
-             PhongRenderer.cu          
+CUDA_FILES = Managed.cu \
+             ParseScene.cu
 
 CUDA_OBJS = $(CUDA_FILES:%.cu=%.o)
 
 CXX_FILES= main.cpp \
-           ParseScene.cpp \
            ParsingException.cpp \
            SceneContainer.cpp \
            BVHTreeSimple.cpp \

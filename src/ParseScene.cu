@@ -24,10 +24,8 @@
 using namespace std;
 namespace mm_ray {
 
-  template<typename Accel>
-  SceneParser<Accel>::~SceneParser(){
+  SceneParser::~SceneParser(){
     delete scene_data;
-    delete accelerator;
     for (auto el : geometry_data)
       delete el;
     geometry_data.clear();
@@ -36,27 +34,50 @@ namespace mm_ray {
     material_ptrs.clear();
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Register_Material(std::string const& type, 
+  void SceneParser::Register_Material(std::string const& type, 
 					     shared_ptr<MaterialBuilder> build){
     material_builders[type] = build;
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Register_Geometry(std::string const& type, 
+  void SceneParser::Register_Geometry(std::string const& type, 
 					     shared_ptr<GeometryBuilder> build){
     geometry_builders[type] = build;
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Register_Renderer(std::string const& type, 
-					     shared_ptr<RendererBuilder<Accel> > build){
-    render_builders[type] = build;
+
+  ParseScene(std::string& fname){
+    FILE *fb = fopen(fname.c_str(), "r");
+    
+    if (fb == NULL){
+      parse_err << "File " << fname  << " does not seem to exist\n";
+      throw &parse_err;
+    }
+    char readBuffer[65536];
+    rapidjson::FileReadStream is(fb, readBuffer, sizeof(readBuffer));
+    root_doc.ParseStream(is);
+    
+    if (root_doc.HasParseError()){
+      auto ok = root_doc.GetParseError();
+      parse_err << "JSON parse error: "  << rapidjson::GetParseError_En(ok);
+      parse_err << "Error offset is: " << root_doc.GetErrorOffset();
+      throw &parse_err;
+    }
+    auto& root = dynamic_cast<rapidjson::Value&>(root_doc);
+    try {
+      Parse_Scene(root);
+      Parse_Material(root);
+      Parse_Geometry(root);
+    } catch (ParsingException* e){
+      *e << "\n";
+      *e << "Parsing error in file: " << fname << "\n";
+      throw e;
+    }
+    fclose(fb);
+
   }
 
 
-  template<typename Accel>
-  void SceneParser<Accel>::Parse_Scene(rapidjson::Value& root){
+  void SceneParser::Parse_Scene(rapidjson::Value& root){
     Vec2 viewport;
     
     auto& viewport_size = parse_err.AssertGetMember(root, "viewport_size");
@@ -85,40 +106,6 @@ namespace mm_ray {
     scene_data->render_block_y = parse_err.get<int>(render_block, 1);
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Parse(string& fname){
-    FILE *fb = fopen(fname.c_str(), "r");
-    
-    if (fb == NULL){
-      parse_err << "File " << fname  << " does not seem to exist\n";
-      throw &parse_err;
-    }
-    char readBuffer[65536];
-    rapidjson::FileReadStream is(fb, readBuffer, sizeof(readBuffer));
-    rapidjson::Document root_doc;
-    
-    root_doc.ParseStream(is);
-    
-    if (root_doc.HasParseError()){
-      auto ok = root_doc.GetParseError();
-      parse_err << "JSON parse error: "  << rapidjson::GetParseError_En(ok);
-      parse_err << "Error offset is: " << root_doc.GetErrorOffset();
-      throw &parse_err;
-    }
-    auto& root = dynamic_cast<rapidjson::Value&>(root_doc);
-    try {
-      Parse_Scene(root);
-      Parse_Material(root);
-      Parse_Geometry(root);
-      Parse_Geometry(root);
-      Parse_Renderer(root);
-    } catch (ParsingException* e){
-      *e << "\n";
-      *e << "Parsing error in file: " << fname << "\n";
-      throw e;
-    }
-    fclose(fb);
-  }
 
   Transform Parse_Transform(rapidjson::Value& transform_obj){
     Real_t scale = parse_err.get<Real_t>(transform_obj, "scale");
@@ -138,23 +125,68 @@ namespace mm_ray {
     return Transform(scale, rotation, axis, translate);
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Parse_Renderer(rapidjson::Value& root){
-    //There can only be one scene declared at a time
-    auto& renderer_tag = parse_err.get(root, "renderer");
-    auto render_name = parse_err.get<string>(renderer_tag, "type");
-    auto it = render_builders.find(render_name);
-    if (it == render_builders.end()){
-      parse_err << "Unrecognized renderer type " << render_name << "\n";
-      throw &parse_err;
+  /*
+    The below two functions are here because I didn't want to write out 
+    all of the nested if statements so instead I let c++ templates 
+    come to the rescue.
+   */
+  template<typename RenderF, typename DeviceF>
+  void Parse_Launch_Accelerator(rapidjson::Value& root, Vec3* results){
+    rapidjson::Value& accelerator_tag = parse_err.get(root, "accelerator");
+    string accelerator_name = parse_err.get<string>(accelerator_tag, "type");
+    
+    if (accelerator_name == "Simple"){
+      
+    } else if (accelerator_name == "Distance"){
+      
+    } else {
+      parse_err << "Unrecognized render function name " << render_name << "\n";
     }
-    accelerator = Accel::Build_Accelerator(geometry_ptrs);
-    renderer = it->second->operator()(renderer_tag, scene_data,
-				      accelerator, geometry_ptrs);
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Parse_Material(rapidjson::Value& root){
+  template<typename DeviceF>
+  void Parse_Launch_Renderer(rapidjson::Value& root, Vec3* results){
+    rapidjson::Value& renderer_tag = parse_err.get(root, "renderer");
+    string render_name = parse_err.get<string>(renderer_tag, "type");
+    if (render_name == "Phong"){
+      Parse_Launch_Accelerator<PhongFunc, DeviceF>(root, results);
+    } else if (render_name == "Distance"){
+      Parse_Launch_Accelerator<DistFunc, DeviceF>(root, results);
+    } else {
+      parse_err << "Unrecognized render function name " << render_name << "\n";
+    }
+  }
+
+  vector<Vec3> SceneParser::Run_Renderer(){
+    /*
+      This function figures out which renderer to run based
+      on the information in the scene file.
+      We can have multiple kinds of render functions such as device,
+      serial host, threaded host,... We can also have multiple kinds
+      of accelerators such as BVH trees, or grids. We can also have 
+      multiple different kinds of ray tracing algorithms defined 
+      on a per pixel basis such as path tracing, distance, whitting,...
+     */
+    rapidjson::Value& device_tag = parse_err.get(root, "device");
+    string device_name = parse_err.get<string>(device_tag, "type");
+    vector<Vec3> output_buffer;
+    output_buffer.resize(scene_data->output[0] * scene_data->output[1]);
+
+    if (device_name == "CUDA"){
+      Parse_Launch_Renderer<DeviceRenderer>(root, &*output_buffer.begin());
+    } else if (device_name == "HostSerial"){
+      
+    } else {
+      parse_err << "Unrecognized render tag: render_name \n";
+      throw parse_err;
+    }
+    Build_Accelerator(geometry_ptrs);
+    renderer = it->second->operator()(renderer_tag, scene_data,
+				      accelerator, geometry_ptrs);
+    
+  }
+
+  void SceneParser::Parse_Material(rapidjson::Value& root){
     auto& material = parse_err.get(root, "materials");
     parse_err.checkType(material, ValueType::VAL_ARRAY);
     for (unsigned i = 0; i < material.Size(); i++){
@@ -170,8 +202,7 @@ namespace mm_ray {
     }
   }
 
-  template<typename Accel>
-  void SceneParser<Accel>::Parse_Geometry(rapidjson::Value& root){
+  void SceneParser::Parse_Geometry(rapidjson::Value& root){
     auto& objects = parse_err.get(root, "geometry");
     for (int i = 0; i < objects.Size(); i++){
       auto& geom_obj = parse_err.get(objects, i);

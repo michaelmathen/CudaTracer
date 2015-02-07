@@ -8,18 +8,22 @@ namespace mm_ray {
   using namespace std;
 
   BVHTreeSimple* BVHTreeSimple::Build_Accelerator(vector<Geometry*>& geom){
+    return tree;
+  }
+  
+  BVHTreeSimple::BVHTreeSimple(vector<Geometry*>& geom){
     /*
       To construct a BVH tree we use a really simple method 
       where we map all the elements to an index on a space
       curve and then construct the tree from the sorted 
       indices
-     */
+    */
     vector<Vec3> centroids; 
     centroids.resize(geom.size());
     transform(geom.begin(), geom.end(), centroids.begin(), [](Geometry const* geom){
 	return geom->getCenter();
       });
-    
+
     Vec3 l = INFINITY;
     l = accumulate(centroids.begin(), centroids.end(), l, 
 		   [](Vec3 const& v1, Vec3 const& v2){
@@ -80,22 +84,19 @@ namespace mm_ray {
       curr_nodes.push_front(make_pair(max(n1.first, n2.first) + 1, new_n));
     }
 
-    int light_length = count_if(geom.begin(), geom.end(), 
-				[](Geometry const* val){
-				  return val->isLight();
-				});
-    const Geometry** lights = new Geometry const*[light_length];
+    light_length = count_if(geom.begin(), geom.end(), 
+			    [](Geometry const* val){
+			      return val->isLight();
+			    });
+    lights = new Geometry const*[light_length];
 
     copy_if(geom.begin(), geom.end(), lights, 
 	    [](Geometry const* val){
 	      return val->isLight();
 	    });
 
-    BVHTreeSimple* tree = new BVHTreeSimple(curr_nodes.front().first, 
-					    curr_nodes.front().second, 
-					    light_length,
-					    lights);
-    return tree;
+    bvh_entries = curr_nodes.front().second;
+    bvh_depth = curr_nodes.front().first;
   }
 
   BVHTreeSimple::~BVHTreeSimple(){

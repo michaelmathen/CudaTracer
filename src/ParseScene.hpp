@@ -12,22 +12,16 @@
 #define MM_PARSE_SCENE
 
 namespace mm_ray{
-  template<typename Accel>
-  class SceneParser {
+  class ParseScene {
 
     //This allocates of the data allocated for geometry,
     //materials, and other managed objects
 
     std::map<std::string, std::shared_ptr<GeometryBuilder> > geometry_builders;
     std::map<std::string, std::shared_ptr<MaterialBuilder> > material_builders;
-    std::map<std::string, std::shared_ptr<RendererBuilder<Accel> > > render_builders;
 
     Scene* scene_data;
-    
     std::string accel_name;
-    Accel* accelerator;
-
-    Renderer<Accel>* renderer;
 
     //This is the actual data for the geometry objects
     //We have this because of meshes and such that require
@@ -45,13 +39,24 @@ namespace mm_ray{
     void Parse_Scene(rapidjson::Value&);
     void Parse_Material(rapidjson::Value&);
     void Parse_Geometry(rapidjson::Value&);
-    void Parse_Renderer(rapidjson::Value&);
 
+    template<typename Accel, typename RenderF, typename DeviceF>
+    void Launch_Kernel(Vec3* results){
+
+    template<typename DeviceF>
+    void Parse_Launch_Renderer(Vec3* results);
+
+    template<typename RenderF, typename DeviceF>
+    void Parse_Launch_Accelerator(Vec3* results);
+
+    rapidjson::Value& root;
+    
   public:
     /*
       Reads all of the data from file and allocates memory for 
       all of them
      */
+    ParseScene(std::string& fname);
     
     //Register different creation functions that handle parsing this 
     //objects data
@@ -62,10 +67,9 @@ namespace mm_ray{
     //Then we parse geometry data
      void Register_Geometry(std::string const&, std::shared_ptr<GeometryBuilder>);
     
-    //Register requirements takes care of making sure a phong material 
-    //doesn't get used for path tracing or vice versa
-    void Register_Renderer(std::string const&, std::shared_ptr<RendererBuilder<Accel> >);
     void Parse(std::string& fname);
+    
+    void Run_Renderer();
 
     Scene const& Get_Scene(){
       return *scene_data;
