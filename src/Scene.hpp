@@ -51,13 +51,6 @@ public:
     std::cout << output[0] <<  " " << output[1] << std::endl;
     std::cout << samples << std::endl;
   }
-  /*
-  Scene& operator=(Scene& scn){
-    std::memcpy(this, &scn, sizeof(Scene));
-    return *this;
-  }
-  */
-  
 };
 
 }

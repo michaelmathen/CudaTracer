@@ -34,18 +34,16 @@ namespace mm_ray {
     material_ptrs.clear();
   }
 
-  void SceneParser::Register_Material(std::string const& type, 
-					     shared_ptr<MaterialBuilder> build){
+  void SceneParser::Register_Material(std::string const& type, Material_t build){
     material_builders[type] = build;
   }
 
-  void SceneParser::Register_Geometry(std::string const& type, 
-					     shared_ptr<GeometryBuilder> build){
+  void SceneParser::Register_Geometry(std::string const& type, Geometry_t build){
     geometry_builders[type] = build;
   }
 
 
-  ParseScene(std::string& fname){
+  void SceneParser::Parse(std::string& fname){
     FILE *fb = fopen(fname.c_str(), "r");
     
     if (fb == NULL){
@@ -54,7 +52,7 @@ namespace mm_ray {
     }
     char readBuffer[65536];
     rapidjson::FileReadStream is(fb, readBuffer, sizeof(readBuffer));
-    root_doc.ParseStream(is);
+    root.ParseStream(is);
     
     if (root_doc.HasParseError()){
       auto ok = root_doc.GetParseError();
@@ -75,7 +73,6 @@ namespace mm_ray {
     fclose(fb);
 
   }
-
 
   void SceneParser::Parse_Scene(rapidjson::Value& root){
     Vec2 viewport;
@@ -126,26 +123,35 @@ namespace mm_ray {
   }
 
   /*
-    The below two functions are here because I didn't want to write out 
+    The below three functions are here because I didn't want to write out 
     all of the nested if statements so instead I let c++ templates 
     come to the rescue.
    */
+
+  template<typename T, typename RenderF, typename DeviceF>
+  void SceneParser::Launch_Kernel(Vec3* results){
+    Accelerator<T> acc(geometry_ptrs);
+    RenderF rf;
+    DeviceF df;
+    df(this->scene_data, acc, results, rf);
+  }
+  
   template<typename RenderF, typename DeviceF>
-  void Parse_Launch_Accelerator(rapidjson::Value& root, Vec3* results){
+  void SceneParser::Parse_Launch_Accelerator(Vec3* results){
     rapidjson::Value& accelerator_tag = parse_err.get(root, "accelerator");
     string accelerator_name = parse_err.get<string>(accelerator_tag, "type");
     
     if (accelerator_name == "Simple"){
-      
-    } else if (accelerator_name == "Distance"){
-      
+      Launch_Kernel<SceneContainer, RenderF, DeviceF>(results;)
+    } else if (accelerator_name == "BVHSimple"){
+      Launch_Kernel<BVHTreeSimple, RenderF, DeviceF>(results);
     } else {
       parse_err << "Unrecognized render function name " << render_name << "\n";
     }
   }
 
   template<typename DeviceF>
-  void Parse_Launch_Renderer(rapidjson::Value& root, Vec3* results){
+  void SceneParser::Parse_Launch_Renderer(Vec3* results){
     rapidjson::Value& renderer_tag = parse_err.get(root, "renderer");
     string render_name = parse_err.get<string>(renderer_tag, "type");
     if (render_name == "Phong"){
@@ -157,7 +163,14 @@ namespace mm_ray {
     }
   }
 
-  vector<Vec3> SceneParser::Run_Renderer(){
+  struct DeviceRender {
+    template <typename T, typename RenderFunction>
+    void operator()(Scene const& scn, Accelerator<T> const& acc, Vec3* results, RenderFunction& render){
+      Device_Render(scn, acc, results, render);
+    }
+  };
+  
+  void SceneParser::Run_Renderer(int* width, int* height, vector<char>& image_output){
     /*
       This function figures out which renderer to run based
       on the information in the scene file.
@@ -173,17 +186,21 @@ namespace mm_ray {
     output_buffer.resize(scene_data->output[0] * scene_data->output[1]);
 
     if (device_name == "CUDA"){
-      Parse_Launch_Renderer<DeviceRenderer>(root, &*output_buffer.begin());
+      Parse_Launch_Renderer<DeviceRender>(root, &*output_buffer.begin());
     } else if (device_name == "HostSerial"){
       
     } else {
       parse_err << "Unrecognized render tag: render_name \n";
       throw parse_err;
     }
-    Build_Accelerator(geometry_ptrs);
-    renderer = it->second->operator()(renderer_tag, scene_data,
-				      accelerator, geometry_ptrs);
-    
+    for (unsigned i = 0; i < output_buffer.size(); i++){
+      Vec3 rgb = max(min(output_buffer, (Real_t)1.0), (Real_t)0.0) * 256;
+      image_output[3 * i    ] = (char)rgb[0];
+      image_output[3 * i + 1] = (char)rgb[1];
+      image_output[3 * i + 2] = (char)rgb[2];
+    }
+    *width = scene_data->output[0];
+    *height = scene_data->output[1];
   }
 
   void SceneParser::Parse_Material(rapidjson::Value& root){

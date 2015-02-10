@@ -1,6 +1,3 @@
-#ifndef __CUDACC__
-#include "rapidjson/document.h"
-#endif 
 
 #include "ray_defs.hpp"
 #include <memory>
@@ -21,8 +18,6 @@ namespace mm_ray {
     __host__ __device__ inline Material(MaterialType mat_type);
     
     __host__ __device__  inline bool isLight() const;
-
-
   };
 
   class PhongMaterial : public Material {
@@ -59,18 +54,6 @@ namespace mm_ray {
   __host__ __device__ inline bool Material::isLight() const {
       return false;
     }
-
-#ifndef __CUDACC__  
-  class Scene; 
-
-  struct MaterialBuilder {
-    virtual Material* operator()(rapidjson::Value&, Scene const& scene_data) = 0;
-  };
-
-  struct PhongMaterialBuilder : MaterialBuilder {
-    virtual Material* operator()(rapidjson::Value&, Scene const&);
-  };
-#endif
 
 }
 #endif

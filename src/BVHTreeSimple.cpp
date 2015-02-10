@@ -11,7 +11,9 @@ namespace mm_ray {
     return tree;
   }
   
-  BVHTreeSimple::BVHTreeSimple(vector<Geometry*>& geom){
+  BVHTreeSimple::BVHTreeSimple(vector<Geometry*>& geom) :
+    Accelerator<BVHTreeSimple>(geom)
+  {
     /*
       To construct a BVH tree we use a really simple method 
       where we map all the elements to an index on a space
@@ -83,17 +85,6 @@ namespace mm_ray {
       new_n->right = n2.second;
       curr_nodes.push_front(make_pair(max(n1.first, n2.first) + 1, new_n));
     }
-
-    light_length = count_if(geom.begin(), geom.end(), 
-			    [](Geometry const* val){
-			      return val->isLight();
-			    });
-    lights = new Geometry const*[light_length];
-
-    copy_if(geom.begin(), geom.end(), lights, 
-	    [](Geometry const* val){
-	      return val->isLight();
-	    });
 
     bvh_entries = curr_nodes.front().second;
     bvh_depth = curr_nodes.front().first;

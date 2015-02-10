@@ -1,24 +1,19 @@
 #include <cstdio>
 #include <vector>
-
-#ifndef __CUDACC__
-#include "rapidjson/document.h"
-#endif 
-
-#include "SceneContainer.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
+#include "Accelerator.hpp"
+#include "Scene.hpp"
 #include "ray_defs.hpp"
-#include "Renderer.hpp"
 
 #ifndef MM_DISTANCE_RENDER
 #define MM_DISTANCE_RENDER
 namespace mm_ray {
 
   struct DistanceRenderer{
-    template<typename Accel>
+    template<typename T>
     Vec3 operator()(Scene const& scene,
-		    Accel const& objects,
+		    Accelerator<T> const& objects,
 		    Ray const& initial_ray){
       Hit prop;
       objects->Intersect(initial_ray, prop);

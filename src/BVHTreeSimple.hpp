@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "ray_defs.hpp"
+#include "Accelerator.hpp"
 #include "Geometry.hpp"
 
 
@@ -16,25 +17,14 @@ namespace mm_ray{
     Geometry const* right;
   };
   
-  class BVHTreeSimple : public Managed {
+  class BVHTreeSimple : public Accelerator<BVHTreeSimple> {
     const Geometry* bvh_entries;
     int bvh_depth;
-
-    const Geometry** lights;
-    int light_length;
 
   public:
 
     BVHTreeSimple(std::vector<Geometry*>& geom);
     ~BVHTreeSimple();
-      
-    __host__ __device__ inline int getLightNumber() const {
-      return light_length;
-    }
-    
-    __host__ __device__ inline Geometry const* getLight(int i) const {
-      return lights[i]; 
-    }
 
     __host__ __device__ void Intersect(Ray const& ray, Hit& prop) const {
       //Check if we enter the scene

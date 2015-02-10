@@ -2,31 +2,35 @@
 #include <iostream>
 #include <memory>
 #include "ray_defs.hpp"
+#include "Accelerator.hpp"
 #include "Geometry.hpp"
-#include "Managed.hpp"
 
 #ifndef MM_SCENE_CONTAINER
 #define MM_SCENE_CONTAINER
 namespace mm_ray {
 
   
-  class SceneContainer : public Managed {
+  class SceneContainer : public Accelerator<SceneContainer> {
   
     Geometry** geometry_buffer;
-    Geometry** light_sources;
-    
+
     unsigned geom_length;
-    unsigned light_length;
-    unsigned material_length;
-    
   public:
     
-    #ifndef __CUDACC__
-    SceneContainer(std::vector<Geometry*>& geom);
-    #endif
-
-    ~SceneContainer();
+    SceneContainer(std::vector<Geometry*>& geom) :
+      Accelerator<SceneContainer>(geom)
+    {
+      geom_length = geom.size();
+      geometry_buffer = (Geometry**)Cuda_Malloc(geom.size() * sizeof(Geometry*));
+      
+      for (unsigned i = 0; i < geom.size(); i++){
+	geometry_buffer[i] = geom[i];
+      }
+    }
     
+    ~SceneContainer(){
+      Cuda_Free(geometry_buffer);
+    }
     
     __host__ __device__ void Intersect(Ray const& ray, Hit& prop) const {
       Hit tmp;
@@ -37,17 +41,7 @@ namespace mm_ray {
 	  prop = tmp;
 	}
       }
-      
-    }
-    
-    __host__ __device__ inline int getLightNumber() const {
-      return light_length;
-    }
-    
-    __host__ __device__ inline Geometry const* getLight(int i) const {
-      return light_sources[i];
     }
   };
-
 }
 #endif

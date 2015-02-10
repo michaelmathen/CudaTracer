@@ -3,7 +3,7 @@
 
 #ifndef MM_RAY_BASE
 #define MM_RAY_BASE
-
+namespace mm_ray{
 enum RayType { RAYBASE };
 
 class Ray {
@@ -19,4 +19,5 @@ public:
   }
 
 };
+}
 #endif

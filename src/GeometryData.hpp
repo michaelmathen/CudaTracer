@@ -44,50 +44,6 @@ namespace mm_ray {
 #endif 
   };
 
-
-#ifndef __CUDACC__  
-  
-  struct GeometryBuilder {
-    virtual void operator() (rapidjson::Value& sphere_obj,
-			     Scene const& scn,
-			     std::vector<Material*>& materials, 
-			     std::vector<std::string>& material_names, 
-			     std::vector<Geometry*>& geom_ptrs,
-			     std::vector<Managed*>& geom_data) = 0;
-  };
-
-  struct SphereBuilder : public GeometryBuilder {
-    virtual void operator()(rapidjson::Value& sphere_obj,
-			    Scene const& scn,
-			    std::vector<Material*>& materials, 
-			    std::vector<std::string>& material_names, 
-			    std::vector<Geometry*>& geom_ptrs,
-			    std::vector<Managed*>& geom_data);
-  
-  };
-
-  struct TriangleMeshBuilder : public GeometryBuilder {
-    virtual void operator()(rapidjson::Value& sphere_obj,
-			    Scene const& scn,
-			    std::vector<Material*>& materials, 
-			    std::vector<std::string>& material_names, 
-			    std::vector<Geometry*>& geom_ptrs,
-			    std::vector<Managed*>& geom_data);
-  
-  };
-
-  struct PointBuilder : public GeometryBuilder {
-    virtual void operator()(rapidjson::Value& sphere_obj,
-			    Scene const& scn,
-			    std::vector<Material*>& materials, 
-			    std::vector<std::string>& material_names, 
-			    std::vector<Geometry*>& geom_ptrs,
-			    std::vector<Managed*>& geom_data);
-  
-  };
-#endif
-
 }
-
 #endif
 

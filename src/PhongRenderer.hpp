@@ -1,33 +1,30 @@
 #include <cstdio>
 #include <vector>
-#include "SceneContainer.hpp"
+#include "Accelerator.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 #include "ray_defs.hpp"
-#include "Renderer.hpp"
 
 #ifndef  MM_PHONG_RENDERER
 #define MM_PHONG_RENDERER
 
 namespace mm_ray {
 
-  template<typename Accel>
   struct PhongRenderer {
-  public:
-    template<typename Accel>
+    template<typename T>
     Vec3 operator()(Scene const& scene,
-		    Accel const& objects,
+		    Accelerator<T> const& objects,
 		    Ray const& initial_ray){
       Hit prop;
       objects->Intersect(initial_ray, prop);
-
+      Vec3 pixel_color = 0;
       if (prop.distance < INFINITY) {
 	PhongMaterial const* pmat = static_cast<PhongMaterial const*>(prop.material);
-
+	
 	//Draw a ray to each light
-	Vec3 pixel_color = pmat->color * pmat->amb_light;
+	 pixel_color = pmat->color * pmat->amb_light;
 	//printf("prop.distance = %f\n", pmat->color[1]);
-    
+	
 	for (int i = 0; i < objects.getLightNumber(); i++){
 	  //We only support point lights so this will not be accurate for area lights
 	  Geometry const* light_source = objects.getLight(i);
@@ -54,12 +51,13 @@ namespace mm_ray {
 	  Real_t shine = pmat->shine;
 
 	  Vec3 light_contr = (diff * max(dot(new_ray, prop.normal),0.f) * pmat->color + 
-			      spec * pow(max(dot((new_ray - ray.direc) / 2.0f, prop.normal), 0.f), shine) * pmat->color);
+			      spec * pow(max(dot((new_ray - initial_ray.direc) / 2.0f, prop.normal), 0.f), shine) * pmat->color);
 
 	  pixel_color += (Real_t)(shadow_prop.distance > length_to_light) * light_contr * light_source->getLight();
 	}
-	return pixel_color;
+      }
+      return pixel_color;
     }
   };
 }
-#endif 
+#endif

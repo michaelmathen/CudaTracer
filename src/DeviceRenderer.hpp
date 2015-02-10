@@ -1,15 +1,11 @@
 #include <cstdio>
 #include <vector>
 #include <curand_kernel.h>
-
-#ifndef __CUDACC__
-#include "rapidjson/document.h"
-#endif 
-#include "SceneContainer.hpp"
+#include "Accelerator.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
+#include "Scene.hpp"
 #include "ray_defs.hpp"
-#include "Renderer.hpp"
 
 
 
@@ -18,10 +14,10 @@
 
 namespace mm_ray {
 
-  template<typename Accel, typename RenderFunction>
+  template<typename T, typename RenderFunction>
   __global__
   void Device_Render_Pixel(Scene const& scene, 
-			   Accel const& objects, 
+			   Accelerator<T> const& objects, 
 			   int region_offset_x,
 			   int region_offset_y,
 			   curandState* globalState,
@@ -44,13 +40,13 @@ namespace mm_ray {
     Real_t norm_x = ((pixel_offset_x + rand_x) / scene.output[0] - .5) * scene.viewport[0];
     Real_t norm_y = ((pixel_offset_y + rand_y) / scene.output[1] - .5) * scene.viewport[1];
 
-    Vec3 direc = norm_i * scene->cam_right + norm_j * scene->cam_up + scene->cam_dir;    
+    Vec3 direc = norm_i * scene.cam_right + norm_j * scene.cam_up + scene.cam_dir;    
     direc = direc / mag(direc);
-    Ray ray(direc, scene->cam_loc);
+    Ray ray(direc, scene.cam_loc);
 
-    pixel_samples[blockIdx.x] = render_f<Accel>(scene, 
-						objects, 
-						ray);
+    pixel_samples[blockIdx.x] = render_f<T>(scene, 
+					    objects, 
+					    ray);
     __syncthreads();
     //Sum the other dimension
     if (blockIdx.x == 0) {
@@ -66,44 +62,43 @@ namespace mm_ray {
     curand_init ( seed, id, 0, &state[id] );
   }
 
-  struct DeviceRenderer {
-    template <typename Accel, typename RenderFunction>  
-    void operator()(Scene const& scn, Accel const& acc, Vec3* results, RenderFunction& render){
+  
+  template <typename T, typename RenderFunction>
+  void Device_Render(Scene const& scn, Accelerator<T> const& acc, Vec3* results, RenderFunction& render){
     
-      //Allocate memory for the output image
-      Vec3* dev_mem;
-      cudaMalloc((void**)&dev_mem, scn.output[0] * scn.output[1] * sizeof(Vec3));
+    //Allocate memory for the output image
+    Vec3* dev_mem;
+    cudaMalloc((void**)&dev_mem, scn.output[0] * scn.output[1] * sizeof(Vec3));
 
-      //Setup the random number generator for the pixel sampling
-      curandState* random_state;
-      cudaMalloc((void**)&dev_state, 
-		 scn.render_block_y * scn.render_block_x * scn.samples * sizeof(curandState));
-      Setup_Generator<<<scn.samples, scn.render_block_y * scn.render_block_x>>>(random_state,
-										time(NULL));
-      dim3 block(scn.samples);
-      int chunk_x = scn.output[0] / scn.render_block_x + scn.output[0] % scn.render_block_x != 0;
-      int chunk_y = scn.output[1] / scn.render_block_y + scn.output[1] % scn.render_block_y != 0;
-      for (int j = 0; j < chunk_y; j++){
-	int grid_y_size = min((j + 1) * scn.render_block_y, scn.output[1]) - j * scn.render_block_y;
-	for (int i = 0; i < chunk_x; i++){
-	  int grid_x_size = min((i + 1) * scn.render_block_x, scn.output[0]) - i * scn.render_block_x;
-	  dim3 grid(grid_x_size, grid_y_size);
-
-	  Device_Render_Pixel<<<block, grid, scn.samples * sizeof(Vec3)>>>(scn, acc, 
-									   i * scn.render_block_x,
-									   i * scn.render_block_y,
-									   random_state,
-									   render,
-									   dev_mem);
-	}
+    //Setup the random number generator for the pixel sampling
+    curandState* random_state;
+    cudaMalloc((void**)&dev_state, 
+	       scn.render_block_y * scn.render_block_x * scn.samples * sizeof(curandState));
+    Setup_Generator<<<scn.samples, scn.render_block_y * scn.render_block_x>>>(random_state,
+									      time(NULL));
+    dim3 block(scn.samples);
+    int chunk_x = scn.output[0] / scn.render_block_x + scn.output[0] % scn.render_block_x != 0;
+    int chunk_y = scn.output[1] / scn.render_block_y + scn.output[1] % scn.render_block_y != 0;
+    for (int j = 0; j < chunk_y; j++){
+      int grid_y_size = min((j + 1) * scn.render_block_y, scn.output[1]) - j * scn.render_block_y;
+      for (int i = 0; i < chunk_x; i++){
+	int grid_x_size = min((i + 1) * scn.render_block_x, scn.output[0]) - i * scn.render_block_x;
+	dim3 grid(grid_x_size, grid_y_size);
+	
+	Device_Render_Pixel<<<block, grid, scn.samples * sizeof(Vec3)>>>(scn, acc, 
+									 i * scn.render_block_x,
+									 j * scn.render_block_y,
+									 random_state,
+									 render,
+									 dev_mem);
       }
-      gpuErrchk(cudaThreadSynchronize());
-      gpuErrchk(cudaMemcpy(results, dev_mem, sizeof(Vec3) * scn.output[0] * scn.output[1], 
-			   cudaMemcpyDeviceToHost));
-      cudaFree(dev_mem);
-      cudaFree(random_state);
     }
-  };
+    gpuErrchk(cudaThreadSynchronize());
+    gpuErrchk(cudaMemcpy(results, dev_mem, sizeof(Vec3) * scn.output[0] * scn.output[1], 
+			 cudaMemcpyDeviceToHost));
+    cudaFree(dev_mem);
+    cudaFree(random_state);
+  }
 }
 #endif 
 
