@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
     //Register the supported materials, geometries, and accelerators
 
     auto phong_builder = [](rapidjson::Value& material,
-			    Scene const& scene_data){
+			    Scene const& scene_data) -> Material* {
       (void) scene_data;
       
       Real_t spec_light = parse_err.get<Real_t>(material, "specular");

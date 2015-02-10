@@ -9,12 +9,12 @@ LD_FLAGS = -lcuda -lcudart -lcurand -lm
 LD_STATIC = 
 INCLUDE_DIRS = -I/usr/local/cuda/include -I../../Vecky/src/
 
-#CXX = /usr/local/bin/g++-4.8
-#CC = /usr/local/bin/gcc-4.8
-#NVCC = /usr/local/cuda/bin/nvcc
-CXX = g++
-CC = gcc
-NVCC = nvcc
+CXX = /usr/local/bin/g++-4.8
+CC = /usr/local/bin/gcc-4.8
+NVCC = /usr/local/cuda/bin/nvcc
+#CXX = g++
+#CC = gcc
+#NVCC = nvcc
 
 OUTPUT_DIR=./bin/
 

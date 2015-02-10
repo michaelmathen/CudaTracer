@@ -14,9 +14,9 @@ namespace mm_ray{
 
   typedef Material*(Material_t)(rapidjson::Value&, Scene const&);
 
-  typedef Geometry*(Geometry_t)(rapidjson::Value&, Scene const&,
-				std::vector<Material*>&, std::vector<std::string>&, 
-				std::vector<Geometry*>&, std::vector<Managed*>&);
+  typedef void(Geometry_t)(rapidjson::Value&, Scene const&,
+			   std::vector<Material*>&, std::vector<std::string>&, 
+			   std::vector<Geometry*>&, std::vector<Managed*>&);
   
   class ParseScene {
 
@@ -72,7 +72,7 @@ namespace mm_ray{
     void Register_Material(std::string const&, Material_t);
 
     //Then we parse geometry data
-     void Register_Geometry(std::string const&, std::shared_ptr<GeometryBuilder>);
+     void Register_Geometry(std::string const&, Geometry_t);
     
     void Parse(std::string& fname);
     
